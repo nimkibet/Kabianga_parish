@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getLiturgicalSeason } from '@/lib/liturgicalSeason';
 
@@ -11,12 +11,8 @@ import { getLiturgicalSeason } from '@/lib/liturgicalSeason';
  * It also supports a user bypass to default back to a clean default white theme.
  */
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [bypass, setBypass] = useState(false);
-
   useEffect(() => {
-    // Check initial bypass state
-    const storedBypass = localStorage.getItem('theme_bypass') === 'true';
-    setBypass(storedBypass);
+
 
     const applyTheme = async () => {
       const isBypassed = localStorage.getItem('theme_bypass') === 'true';
@@ -86,7 +82,6 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     // Listen to custom bypass toggle events
     const handleBypassChange = () => {
       applyTheme();
-      setBypass(localStorage.getItem('theme_bypass') === 'true');
     };
 
     window.addEventListener('theme-bypass-changed', handleBypassChange);

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, Users, Compass, ShieldCheck, Palette, Sun } from 'lucide-react';
+import { Home, BookOpen, Users, Compass, ShieldCheck, Palette, Sun, Landmark } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -12,7 +12,9 @@ export default function Navbar() {
   useEffect(() => {
     // Check initial bypass state
     const stored = localStorage.getItem('theme_bypass') === 'true';
-    setIsBypassed(stored);
+    if (stored) {
+      setTimeout(() => setIsBypassed(stored), 0);
+    }
   }, []);
 
   const toggleThemeBypass = () => {
@@ -23,9 +25,20 @@ export default function Navbar() {
     window.dispatchEvent(new Event('theme-bypass-changed'));
   };
 
-  const navItems = [
+  // 5 items for mobile bottom navigation (strictly keeping 5-item limit)
+  const mobileNavItems = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Readings', href: '/readings', icon: BookOpen },
+    { name: 'Centers', href: '/centers', icon: Landmark },
+    { name: 'Societies', href: '/societies', icon: Compass },
+    { name: 'Admin', href: '/admin', icon: ShieldCheck },
+  ];
+
+  // Full set of items for desktop navigation
+  const desktopNavItems = [
+    { name: 'Home', href: '/', icon: Home },
+    { name: 'Readings', href: '/readings', icon: BookOpen },
+    { name: 'Centers', href: '/centers', icon: Landmark },
     { name: 'Jumuiyas', href: '/jumuiyas', icon: Users },
     { name: 'Societies', href: '/societies', icon: Compass },
     { name: 'Admin', href: '/admin', icon: ShieldCheck },
@@ -50,14 +63,14 @@ export default function Navbar() {
           
           {/* Main Desktop Links */}
           <nav className="flex space-x-1 items-center">
-            {navItems.map((item) => {
+            {desktopNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-2 touch-target ${
+                  className={`px-3 py-2 rounded-lg font-semibold text-sm transition-all flex items-center space-x-1.5 touch-target ${
                     isActive
                       ? 'bg-primary text-white shadow-sm'
                       : 'text-foreground/75 hover:bg-muted hover:text-foreground'
@@ -146,7 +159,7 @@ export default function Navbar() {
 
       {/* Mobile Bottom Tab Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-t border-border py-1 px-2 flex justify-around items-center md:hidden pb-safe-bottom shadow-lg">
-        {navItems.map((item) => {
+        {mobileNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (

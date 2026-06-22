@@ -32,7 +32,6 @@ const DEFAULT_SLIDES: Slide[] = [
 export default function HeroCarousel() {
   const [slides, setSlides] = useState<Slide[]>(DEFAULT_SLIDES);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
   
   // Touch coordinates for swiping
   const touchStart = useRef<number | null>(null);
@@ -54,8 +53,6 @@ export default function HeroCarousel() {
         }
       } catch (err) {
         console.error('Error fetching carousel slides:', err);
-      } finally {
-        setLoading(false);
       }
     }
     fetchSlides();
@@ -67,18 +64,18 @@ export default function HeroCarousel() {
     return () => stopAutoPlay();
   }, [slides, currentIndex]);
 
-  const startAutoPlay = () => {
+  function startAutoPlay() {
     stopAutoPlay();
     autoPlayTimer.current = setInterval(() => {
       nextSlide();
     }, 6000); // 6 seconds per slide
-  };
+  }
 
-  const stopAutoPlay = () => {
+  function stopAutoPlay() {
     if (autoPlayTimer.current) {
       clearInterval(autoPlayTimer.current);
     }
-  };
+  }
 
   const prevSlide = () => {
     setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));

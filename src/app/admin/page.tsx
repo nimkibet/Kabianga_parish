@@ -24,7 +24,8 @@ import {
   FileDown,
   Volume2,
   Check,
-  X
+  X,
+  Landmark
 } from 'lucide-react';
 import CloudinaryUploadWidget from '@/components/CloudinaryUploadWidget';
 
@@ -42,7 +43,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<
     'carousel' | 'history' | 'gallery' | 'theme' | 'schedules' | 
     'readings' | 'jumuiyas' | 'societies' | 'prayers' | 
-    'giving' | 'registrations' | 'bulletins' | 'sermons' | 'bookings'
+    'giving' | 'registrations' | 'bulletins' | 'sermons' | 'bookings' | 'centers'
   >('carousel');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -61,6 +62,7 @@ export default function AdminPage() {
   const [bulletins, setBulletins] = useState<any[]>([]);
   const [sermons, setSermons] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [centers, setCenters] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
 
   // Form Inputs State
@@ -114,8 +116,9 @@ export default function AdminPage() {
   const [jPhone, setJPhone] = useState('');
   const [jDay, setJDay] = useState('');
   const [jLocation, setJLocation] = useState('');
+  const [jCenterName, setJCenterName] = useState('');
 
-  // Societies Form (editing existing)
+  // Societies Form
   const [socSelectCode, setSocSelectCode] = useState('');
   const [socDesc, setSocDesc] = useState('');
   const [socLeader, setSocLeader] = useState('');
@@ -142,6 +145,20 @@ export default function AdminPage() {
   const [sermAudioUrl, setSermAudioUrl] = useState('');
   const [sermDate, setSermDate] = useState('');
 
+  // Center Form
+  const [cName, setCName] = useState('');
+  const [cDesc, setCDesc] = useState('');
+  const [catName, setCatName] = useState('');
+  const [catPhone, setCatPhone] = useState('');
+  const [chairName, setChairName] = useState('');
+  const [chairPhone, setChairPhone] = useState('');
+  const [secName, setSecName] = useState('');
+  const [secPhone, setSecPhone] = useState('');
+  const [treasName, setTreasName] = useState('');
+  const [treasPhone, setTreasPhone] = useState('');
+  const [centerImageUrl, setCenterImageUrl] = useState('');
+  const [centerImages, setCenterImages] = useState<string[]>([]);
+
   // Track session
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -167,7 +184,7 @@ export default function AdminPage() {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const fetchData = async () => {
+  async function fetchData() {
     setDataLoading(true);
     try {
       if (activeTab === 'carousel') {
@@ -196,6 +213,9 @@ export default function AdminPage() {
         setReadings(data || []);
       } else if (activeTab === 'jumuiyas') {
         const { data, error } = await supabase.from('jumuiyas').select('*').order('name', { ascending: true });
+        // Fetch centers for linking dropdown
+        const { data: centersData } = await supabase.from('centers').select('name');
+        setCenters(centersData || []);
         if (error) throw error;
         setJumuiyas(data || []);
       } else if (activeTab === 'societies') {
@@ -229,6 +249,10 @@ export default function AdminPage() {
         const { data, error } = await supabase.from('equipment_bookings').select('*').order('start_date', { ascending: false });
         if (error) throw error;
         setBookings(data || []);
+      } else if (activeTab === 'centers') {
+        const { data, error } = await supabase.from('centers').select('*').order('name', { ascending: true });
+        if (error) throw error;
+        setCenters(data || []);
       }
     } catch (err: any) {
       console.error('Fetch error:', err.message);
@@ -256,7 +280,7 @@ export default function AdminPage() {
     await supabase.auth.signOut();
   };
 
-  // Cloudinary Success Wrappers
+  // Submit methods
   const handleAddSlide = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!slideImageUrl) return showNotification('error', 'Please upload an image first.');
@@ -357,10 +381,8 @@ export default function AdminPage() {
       const resData = await res.json();
       if (!res.ok) throw new Error(resData.error || 'OCR failed');
       
-      // Auto fill Swahili/English text area depending on layout
-      // Defaulting to appending extracted text to Swahili Reading
       setReadSwaText(prev => prev ? `${prev}\n\n${resData.text}` : resData.text);
-      showNotification('success', 'Successfully extracted text and appended to Kiswahili Reading text area!');
+      showNotification('success', 'Extracted text appended successfully!');
     } catch (err: any) {
       showNotification('error', `OCR Error: ${err.message}`);
     } finally {
@@ -373,11 +395,11 @@ export default function AdminPage() {
     try {
       const { error } = await supabase.from('jumuiyas').insert({
         name: jName, zone: jZone, leader_name: jLeader, leader_phone: jPhone,
-        meeting_day: jDay, meeting_location: jLocation
+        meeting_day: jDay, meeting_location: jLocation, center_name: jCenterName || null
       });
       if (error) throw error;
       showNotification('success', 'Jumuiya added!');
-      setJName(''); setJZone(''); setJLeader(''); setJPhone(''); setJDay(''); setJLocation('');
+      setJName(''); setJZone(''); setJLeader(''); setJPhone(''); setJDay(''); setJLocation(''); setJCenterName('');
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
   };
@@ -452,37 +474,60 @@ export default function AdminPage() {
     } catch (err: any) { showNotification('error', err.message); }
   };
 
-  // Booking action controls
+  const handleAddCenter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const leadersList = [
+      { role: 'Catechist', name: catName, phone: catPhone },
+      { role: 'Chairman', name: chairName, phone: chairPhone },
+      { role: 'Secretary', name: secName, phone: secPhone },
+      { role: 'Treasurer', name: treasName, phone: treasPhone }
+    ].filter(l => l.name.trim()); // Only keep filled roles
+
+    try {
+      const { error } = await supabase.from('centers').insert({
+        name: cName,
+        description: cDesc,
+        leaders: leadersList,
+        images: centerImages
+      });
+      if (error) throw error;
+      showNotification('success', 'Outstation Center added!');
+      setCName(''); setCDesc(''); setCatName(''); setCatPhone(''); setChairName(''); setChairPhone(''); setSecName(''); setSecPhone(''); setTreasName(''); setTreasPhone(''); setCenterImages([]);
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const handleAddCenterImage = () => {
+    if (!centerImageUrl) return;
+    setCenterImages(prev => [...prev, centerImageUrl]);
+    setCenterImageUrl('');
+  };
+
+  // Status updates
   const handleUpdateBooking = async (id: string, status: 'approved' | 'rejected') => {
     try {
-      const { error } = await supabase
-        .from('equipment_bookings')
-        .update({ status: status })
-        .eq('id', id);
-      
+      const { error } = await supabase.from('equipment_bookings').update({ status }).eq('id', id);
       if (error) throw error;
       showNotification('success', `Booking request ${status}!`);
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
   };
 
-  // Moderation of prayers
   const handleModeratePrayer = async (id: string, approve: boolean) => {
     try {
       if (approve) {
         const { error } = await supabase.from('prayer_requests').update({ is_moderated: true }).eq('id', id);
         if (error) throw error;
-        showNotification('success', 'Prayer request approved!');
+        showNotification('success', 'Prayer approved!');
       } else {
         const { error } = await supabase.from('prayer_requests').delete().eq('id', id);
         if (error) throw error;
-        showNotification('success', 'Prayer request deleted!');
+        showNotification('success', 'Prayer deleted!');
       }
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
   };
 
-  // Sacramental status
   const handleUpdateRegStatus = async (id: string, status: string) => {
     try {
       const { error } = await supabase.from('sacramental_registrations').update({ status }).eq('id', id);
@@ -506,21 +551,21 @@ export default function AdminPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <p className="text-sm font-semibold text-muted-foreground">Authenticating admin session...</p>
+        <p className="text-sm font-semibold text-muted-foreground">Authenticating session...</p>
       </div>
     );
   }
 
-  // LOGIN INTERFACE
+  // LOGIN PORTAL
   if (!session) {
     return (
       <div className="flex flex-col justify-center items-center py-10 sm:py-20 px-4">
-        <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+        <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl overflow-hidden font-sans">
           <div className="p-6 bg-gradient-to-br from-primary to-purple-800 text-white text-center space-y-2">
             <div className="w-12 h-12 bg-white/15 rounded-full flex items-center justify-center mx-auto border border-white/20">
               <Lock className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-extrabold tracking-tight font-sans">Admin Secretary Portal</h1>
+            <h1 className="text-xl font-extrabold tracking-tight">Admin Secretary Portal</h1>
             <p className="text-xs text-purple-100 font-medium">Kabianga Parish Administration</p>
           </div>
 
@@ -578,10 +623,9 @@ export default function AdminPage() {
     );
   }
 
-  // LOGGED-IN ADMIN CONSOLE
+  // WORKSPACE
   return (
     <div className="space-y-8 pb-20">
-      {/* Admin header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4 gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
@@ -612,25 +656,25 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Tabs Layout */}
+      {/* Tabs scroll header */}
       <div className="flex flex-col space-y-4">
-        {/* Horizontal scroll tabs list */}
         <div className="flex border-b border-border overflow-x-auto no-scrollbar pb-1 gap-1">
           {[
             { id: 'carousel', label: 'Hero Slides', icon: Sliders },
-            { id: 'history', label: 'History Milestones', icon: BookOpen },
-            { id: 'gallery', label: 'Photo Gallery', icon: GalleryIcon },
-            { id: 'theme', label: 'Theme settings', icon: Sliders },
+            { id: 'centers', label: 'Centers (Outstations)', icon: Landmark },
+            { id: 'jumuiyas', label: 'Jumuiyas (SCCs)', icon: Users },
+            { id: 'societies', label: 'Societies Groups', icon: Compass },
             { id: 'schedules', label: 'Service Schedules', icon: Clock },
             { id: 'readings', label: 'Bible Readings', icon: BookOpen },
-            { id: 'jumuiyas', label: 'Jumuiyas Directory', icon: Users },
-            { id: 'societies', label: 'Societies Groups', icon: Compass },
-            { id: 'prayers', label: 'Moderation Wall', icon: Heart },
             { id: 'giving', label: 'Giving Projects', icon: Coins },
-            { id: 'registrations', label: 'Sacrament Registry', icon: FileText },
+            { id: 'registrations', label: 'Sacraments Registry', icon: FileText },
+            { id: 'prayers', label: 'Moderation Wall', icon: Heart },
             { id: 'bulletins', label: 'Weekly Bulletins', icon: FileDown },
-            { id: 'sermons', label: 'Sermon Summaries', icon: Volume2 },
+            { id: 'sermons', label: 'Homily reflections', icon: Volume2 },
             { id: 'bookings', label: 'Asset Bookings', icon: Calendar },
+            { id: 'history', label: 'Parish History', icon: BookOpen },
+            { id: 'gallery', label: 'Photo Gallery', icon: GalleryIcon },
+            { id: 'theme', label: 'Theme settings', icon: Sliders },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -680,71 +724,92 @@ export default function AdminPage() {
               </form>
             )}
 
-            {/* HISTORY FORM */}
-            {activeTab === 'history' && (
-              <form onSubmit={handleAddHistory} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">New Milestone</h2>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Year</label><input type="number" required placeholder="1990" value={historyYear} onChange={e => setHistoryYear(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Milestone Title</label><input type="text" required placeholder="First church building" value={historyTitle} onChange={e => setHistoryTitle(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Description</label><textarea rows={3} required placeholder="Milestone details" value={historyContent} onChange={e => setHistoryContent(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+            {/* OUTSTATION CENTER FORM */}
+            {activeTab === 'centers' && (
+              <form onSubmit={handleAddCenter} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">New Outstation Center</h2>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground">Milestone Image (Optional)</label>
-                  {historyImageUrl ? (
-                    <div className="relative rounded overflow-hidden aspect-video border"><img src={historyImageUrl} className="object-cover w-full h-full" /><button onClick={() => setHistoryImageUrl('')} className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full"><Trash2 className="w-3.5 h-3.5" /></button></div>
+                  <label className="text-xs font-bold text-muted-foreground">Center Name</label>
+                  <input type="text" required placeholder="St. Augustine Kiptere" value={cName} onChange={e => setCName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Description</label>
+                  <textarea rows={2} required placeholder="Center details & summary..." value={cDesc} onChange={e => setCDesc(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                </div>
+                
+                {/* Leaders inputs */}
+                <div className="bg-muted/40 p-3 rounded-xl border border-border/50 space-y-3">
+                  <label className="text-[10px] font-black uppercase text-primary tracking-wide block">Leaders details (Up to 4)</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div><input type="text" placeholder="Catechist Name" value={catName} onChange={e => setCatName(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs" /></div>
+                    <div><input type="tel" placeholder="Catechist Phone" value={catPhone} onChange={e => setCatPhone(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs" /></div>
+                    <div><input type="text" placeholder="Chairman Name" value={chairName} onChange={e => setChairName(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs" /></div>
+                    <div><input type="tel" placeholder="Chairman Phone" value={chairPhone} onChange={e => setChairPhone(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs" /></div>
+                    <div><input type="text" placeholder="Secretary Name" value={secName} onChange={e => setSecName(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs" /></div>
+                    <div><input type="tel" placeholder="Secretary Phone" value={secPhone} onChange={e => setSecPhone(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs" /></div>
+                    <div><input type="text" placeholder="Treasurer Name" value={treasName} onChange={e => setTreasName(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs" /></div>
+                    <div><input type="tel" placeholder="Treasurer Phone" value={treasPhone} onChange={e => setTreasPhone(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs" /></div>
+                  </div>
+                </div>
+
+                {/* Center Image Upload */}
+                <div className="bg-muted/40 p-3 rounded-xl border border-border/50 space-y-2">
+                  <label className="text-[10px] font-black uppercase text-primary tracking-wide block">Center Photos ({centerImages.length} uploaded)</label>
+                  {centerImageUrl ? (
+                    <button type="button" onClick={handleAddCenterImage} className="w-full py-1.5 bg-accent text-white text-xs font-bold rounded-lg">Confirm Uploaded Photo</button>
                   ) : (
-                    <CloudinaryUploadWidget onUploadSuccess={setHistoryImageUrl} buttonText="Upload Photo" />
+                    <CloudinaryUploadWidget onUploadSuccess={setCenterImageUrl} buttonText="Upload Center Photo" />
+                  )}
+                  {centerImages.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {centerImages.map((img, idx) => <span key={idx} className="text-[9px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full truncate max-w-[80px]">Photo {idx+1}</span>)}
+                    </div>
                   )}
                 </div>
-                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Milestone</button>
+
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Outstation Center</button>
               </form>
             )}
 
-            {/* GALLERY FORM */}
-            {activeTab === 'gallery' && (
-              <form onSubmit={handleAddGallery} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">Add Gallery Photo</h2>
+            {/* JUMUIYA FORM */}
+            {activeTab === 'jumuiyas' && (
+              <form onSubmit={handleAddJumuiya} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">New Jumuiya</h2>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground">Upload Image</label>
-                  {galleryImageUrl ? (
-                    <div className="relative rounded overflow-hidden aspect-square border"><img src={galleryImageUrl} className="object-cover w-full h-full" /><button onClick={() => setGalleryImageUrl('')} className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full"><Trash2 className="w-3.5 h-3.5" /></button></div>
-                  ) : (
-                    <CloudinaryUploadWidget onUploadSuccess={setGalleryImageUrl} buttonText="Select Gallery Photo" />
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground">Category</label>
-                  <select value={galleryCategory} onChange={e => setGalleryCategory(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm">
-                    <option value="General">General</option>
-                    <option value="Sunday Service">Sunday Service</option>
-                    <option value="Choir">Choir</option>
-                    <option value="Youth">Youth</option>
-                    <option value="Custom">-- Custom Category --</option>
+                  <label className="text-xs font-bold text-muted-foreground">Select Center (Outstation)</label>
+                  <select value={jCenterName} onChange={e => setJCenterName(e.target.value)} className="w-full px-3 py-2.5 border rounded-xl bg-background text-sm font-bold">
+                    <option value="">-- Select Center --</option>
+                    {centers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
-                {galleryCategory === 'Custom' && (
-                  <div className="space-y-1"><label className="text-xs font-bold text-accent">Define Custom Category</label><input type="text" required placeholder="Easter 2026" value={galleryCustomCategory} onChange={e => setGalleryCustomCategory(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                )}
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Caption</label><textarea rows={3} placeholder="Photo details..." value={galleryCaption} onChange={e => setGalleryCaption(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <button type="submit" disabled={!galleryImageUrl} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50">Add Photo</button>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Jumuiya Name</label><input type="text" required placeholder="Mtakatifu Yuda Tadeo" value={jName} onChange={e => setJName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Zone</label><input type="text" required placeholder="Kabianga Central" value={jZone} onChange={e => setJZone(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leader Name</label><input type="text" required placeholder="Peter Mutai" value={jLeader} onChange={e => setJLeader(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leader Phone</label><input type="text" required placeholder="0704285127" value={jPhone} onChange={e => setJPhone(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Day & Time</label><input type="text" required placeholder="Thursdays at 5:00 PM" value={jDay} onChange={e => setJDay(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Venue</label><input type="text" placeholder="Rotational" value={jLocation} onChange={e => setJLocation(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Jumuiya</button>
               </form>
             )}
 
-            {/* THEME FORM */}
-            {activeTab === 'theme' && (
-              <form onSubmit={handleAddTheme} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">Add Season Theme</h2>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Theme Name</label><input type="text" required placeholder="Lent" value={themeName} onChange={e => setThemeName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-[10px] font-bold block mb-1">Primary Color</label><input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="w-full h-9 rounded-lg border" /></div>
-                  <div><label className="text-[10px] font-bold block mb-1">Hover Color</label><input type="color" value={secondaryColor} onChange={e => setSecondaryColor(e.target.value)} className="w-full h-9 rounded-lg border" /></div>
-                  <div><label className="text-[10px] font-bold block mb-1">Background</label><input type="color" value={backgroundColor} onChange={e => setBackgroundColor(e.target.value)} className="w-full h-9 rounded-lg border" /></div>
-                  <div><label className="text-[10px] font-bold block mb-1">Text Color</label><input type="color" value={foregroundColor} onChange={e => setForegroundColor(e.target.value)} className="w-full h-9 rounded-lg border" /></div>
+            {/* SOCIETIES HUB EDIT FORM */}
+            {activeTab === 'societies' && (
+              <form onSubmit={handleUpdateSociety} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">Update Society Settings</h2>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Select Society</label>
+                  <select value={socSelectCode} onChange={e => {
+                    const soc = societies.find(s => s.code === e.target.value);
+                    if (soc) loadSocietyForEdit(soc);
+                  }} className="w-full px-3 py-2 border rounded-xl bg-background text-sm font-bold">
+                    {societies.map(s => <option key={s.id} value={s.code}>{s.name}</option>)}
+                  </select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-[10px] font-bold block">Start Month (1-12)</label><input type="number" min="1" max="12" value={startMonth} onChange={e => setStartMonth(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg" /></div>
-                  <div><label className="text-[10px] font-bold block">End Month (1-12)</label><input type="number" min="1" max="12" value={endMonth} onChange={e => setEndMonth(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg" /></div>
-                </div>
-                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Seasonal Theme</button>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Description</label><textarea rows={3} required value={socDesc} onChange={e => setSocDesc(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leadership Details</label><textarea rows={2} required placeholder="Chairperson..." value={socLeader} onChange={e => setSocLeader(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Pattern</label><input type="text" required value={socPattern} onChange={e => setSocPattern(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Society Announcement</label><textarea rows={3} placeholder="Latest updates..." value={socAnnounce} onChange={e => setSocAnnounce(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl font-sans">Save Changes</button>
               </form>
             )}
 
@@ -769,18 +834,16 @@ export default function AdminPage() {
                     <option value="Mass">Holy Mass</option><option value="Confession">Confession</option>
                   </select>
                 </div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Details / Description</label><input type="text" placeholder="Holy Communion & announcements" value={schedDetails} onChange={e => setSchedDetails(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Details / Description</label><input type="text" placeholder="Holy Communion" value={schedDetails} onChange={e => setSchedDetails(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Schedule</button>
               </form>
             )}
 
-            {/* READINGS FORM WITH OCR INTEGRATION */}
+            {/* BIBLE READINGS */}
             {activeTab === 'readings' && (
               <form onSubmit={handleAddReading} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">Daily Liturgical Scriptures</h2>
+                <h2 className="text-base font-bold text-foreground border-b pb-2">Daily Scriptures</h2>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Date</label><input type="date" required value={readDate} onChange={e => setReadDate(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                
-                {/* Fallback OCR Section */}
                 <div className="bg-muted/40 p-3 rounded-xl border border-border space-y-2">
                   <label className="text-[10px] font-bold text-accent uppercase tracking-wider block">Scripture OCR Text Extractor</label>
                   {ocrImageUrl ? (
@@ -795,48 +858,11 @@ export default function AdminPage() {
                     <CloudinaryUploadWidget onUploadSuccess={setOcrImageUrl} buttonText="Upload Reading screenshot" className="w-full bg-accent hover:bg-emerald-600 text-xs py-2" />
                   )}
                 </div>
-
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Verse Title</label><input type="text" required placeholder="e.g. John 3:16-18" value={readEngVerse} onChange={e => setReadEngVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Verse Title</label><input type="text" required placeholder="John 3:16" value={readEngVerse} onChange={e => setReadEngVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Reading Content</label><textarea rows={3} required placeholder="Full scripture text..." value={readEngText} onChange={e => setReadEngText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Verse Title</label><input type="text" required placeholder="e.g. Yohana 3:16-18" value={readSwaVerse} onChange={e => setReadSwaVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Verse Title</label><input type="text" required placeholder="Yohana 3:16" value={readSwaVerse} onChange={e => setReadSwaVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Reading Content</label><textarea rows={3} required placeholder="Maandiko ya Kiswahili..." value={readSwaText} onChange={e => setReadSwaText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                
                 <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Readings</button>
-              </form>
-            )}
-
-            {/* JUMUIYA FORM */}
-            {activeTab === 'jumuiyas' && (
-              <form onSubmit={handleAddJumuiya} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">New Jumuiya</h2>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Jumuiya Name</label><input type="text" required placeholder="Mtakatifu Yuda Tadeo" value={jName} onChange={e => setJName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Zone</label><input type="text" required placeholder="Kabianga Central" value={jZone} onChange={e => setJZone(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leader Name</label><input type="text" required placeholder="Peter Mutai" value={jLeader} onChange={e => setJLeader(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leader Phone</label><input type="text" required placeholder="0704285127" value={jPhone} onChange={e => setJPhone(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Day & Time</label><input type="text" required placeholder="Thursdays at 5:00 PM" value={jDay} onChange={e => setJDay(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Venue</label><input type="text" placeholder="Rotational (Member Homes)" value={jLocation} onChange={e => setJLocation(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl font-sans">Save Jumuiya</button>
-              </form>
-            )}
-
-            {/* SOCIETIES HUB EDIT FORM */}
-            {activeTab === 'societies' && (
-              <form onSubmit={handleUpdateSociety} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">Update Society Settings</h2>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground">Select Society</label>
-                  <select value={socSelectCode} onChange={e => {
-                    const soc = societies.find(s => s.code === e.target.value);
-                    if (soc) loadSocietyForEdit(soc);
-                  }} className="w-full px-3 py-2 border rounded-xl bg-background text-sm font-bold">
-                    {societies.map(s => <option key={s.id} value={s.code}>{s.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Description</label><textarea rows={3} required value={socDesc} onChange={e => setSocDesc(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leadership Details</label><textarea rows={2} required placeholder="Chairperson: Jane..." value={socLeader} onChange={e => setSocLeader(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Pattern</label><input type="text" required value={socPattern} onChange={e => setSocPattern(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Society Announcement</label><textarea rows={3} placeholder="Latest updates..." value={socAnnounce} onChange={e => setSocAnnounce(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Changes</button>
               </form>
             )}
 
@@ -869,7 +895,7 @@ export default function AdminPage() {
                 </div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Bulletin Title</label><input type="text" required placeholder="Bulletin - June 22nd" value={bullTitle} onChange={e => setBullTitle(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Publish Date</label><input type="date" value={bullDate} onChange={e => setBullDate(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <button type="submit" disabled={!bullUrl} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50">Publish Bulletin</button>
+                <button type="submit" disabled={!bullUrl} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50 font-sans">Publish Bulletin</button>
               </form>
             )}
 
@@ -894,32 +920,12 @@ export default function AdminPage() {
               </form>
             )}
 
-            {/* BOOKINGS INFO */}
-            {activeTab === 'bookings' && (
+            {/* GENERAL TEXT FOR DIRECT READ TABS */}
+            {['bookings', 'registrations', 'prayers', 'history', 'gallery'].includes(activeTab) && (
               <div className="bg-muted/40 p-4 rounded-xl space-y-2 border">
-                <h3 className="font-extrabold text-sm text-foreground">Equipment Bookings Management</h3>
+                <h3 className="font-extrabold text-sm text-foreground uppercase tracking-wide">Listing Administrator</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Review and moderate physical parish assets reservations. Approve or reject request entries using the panels on the right side.
-                </p>
-              </div>
-            )}
-
-            {/* REGISTRATIONS INFO */}
-            {activeTab === 'registrations' && (
-              <div className="bg-muted/40 p-4 rounded-xl space-y-2 border">
-                <h3 className="font-extrabold text-sm text-foreground">Sacramental Requests Management</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Private applicant list for sacraments. Manage states (pending, approved) using the panels on the right side.
-                </p>
-              </div>
-            )}
-
-            {/* PRAYER MODERATION INFO */}
-            {activeTab === 'prayers' && (
-              <div className="bg-muted/40 p-4 rounded-xl space-y-2 border">
-                <h3 className="font-extrabold text-sm text-foreground">Prayer Intention Moderation</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Parishioners submit prayers. Approve requests to post them publicly on the dynamic live wall screen.
+                  Select, delete, or update the states of registrations and content records using the panels on the right side.
                 </p>
               </div>
             )}
@@ -948,55 +954,54 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* HISTORY LIST */}
-            {activeTab === 'history' && (
+            {/* CENTERS LIST */}
+            {activeTab === 'centers' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {historyEntries.map(entry => (
-                  <div key={entry.id} className="bg-card border p-4 rounded-xl flex flex-col justify-between space-y-3 shadow-sm">
+                {centers.map(c => (
+                  <div key={c.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
                     <div>
-                      <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">{entry.year}</span>
-                      <h4 className="font-extrabold text-sm mt-1">{entry.title}</h4>
-                      <p className="text-xs text-muted-foreground line-clamp-3 mt-1">{entry.content}</p>
+                      <h4 className="font-extrabold text-sm text-primary">{c.name}</h4>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{c.description}</p>
+                      {c.leaders && c.leaders.length > 0 && (
+                        <div className="text-[10px] text-muted-foreground mt-2 border-t pt-2 space-y-0.5">
+                          {c.leaders.map((l: any, idx: number) => <p key={idx}><strong>{l.role}:</strong> {l.name} ({l.phone})</p>)}
+                        </div>
+                      )}
                     </div>
-                    <button onClick={() => handleDelete('history_entries', entry.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Milestone</button>
+                    <button onClick={() => handleDelete('centers', c.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Remove Center</button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* GALLERY LIST */}
-            {activeTab === 'gallery' && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {galleryImages.map(img => (
-                  <div key={img.id} className="bg-card border rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
-                    <img src={img.image_url} className="aspect-square object-cover" />
-                    <div className="p-3 space-y-2">
-                      <span className="text-[10px] bg-accent/15 text-accent px-2 py-0.5 rounded-full block w-fit font-bold">{img.category}</span>
-                      <p className="text-xs text-muted-foreground line-clamp-1">{img.caption || 'No caption'}</p>
-                      <button onClick={() => handleDelete('gallery_images', img.id)} className="w-full py-1 bg-destructive/10 text-destructive text-[10px] font-bold rounded">Delete</button>
+            {/* JUMUIYA LIST */}
+            {activeTab === 'jumuiyas' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {jumuiyas.map(j => (
+                  <div key={j.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                      <h4 className="font-extrabold text-sm">{j.name} ({j.zone})</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Leader: {j.leader_name} ({j.leader_phone})</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Meets: {j.meeting_day} @ {j.meeting_location || 'N/A'}</p>
+                      {j.center_name && <p className="text-[9px] text-accent bg-accent/5 px-2 py-0.5 w-fit rounded font-bold mt-1">Center: {j.center_name}</p>}
                     </div>
+                    <button onClick={() => handleDelete('jumuiyas', j.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Jumuiya</button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* THEME LIST */}
-            {activeTab === 'theme' && (
+            {/* SOCIETIES HUB DIRECTORY VIEW */}
+            {activeTab === 'societies' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {themes.map(t => (
-                  <div key={t.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                {societies.map(s => (
+                  <button key={s.id} onClick={() => loadSocietyForEdit(s)} className={`text-left bg-card border p-4 rounded-xl shadow-sm hover:border-primary/40 transition-all flex flex-col justify-between space-y-2 ${socSelectCode === s.code ? 'border-primary shadow-md bg-primary/5' : ''}`}>
                     <div>
-                      <h4 className="font-extrabold text-sm">{t.name}</h4>
-                      <div className="flex gap-2 mt-2">
-                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.primary_color }} title="Primary" />
-                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.secondary_color }} title="Hover" />
-                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.background_color }} title="Background" />
-                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.foreground_color }} title="Text" />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">Months: {t.start_month} to {t.end_month}</p>
+                      <h4 className="font-extrabold text-sm">{s.name}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{s.description}</p>
                     </div>
-                    <button onClick={() => handleDelete('theme_settings', t.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Remove Theme</button>
-                  </div>
+                    <span className="text-[10px] text-primary font-bold">Tap to edit details →</span>
+                  </button>
                 ))}
               </div>
             )}
@@ -1037,33 +1042,50 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* JUMUIYA LIST */}
-            {activeTab === 'jumuiyas' && (
+            {/* GIVING PROJECTS LIST */}
+            {activeTab === 'giving' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {jumuiyas.map(j => (
-                  <div key={j.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                {givingProjects.map(gp => (
+                  <div key={gp.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
                     <div>
-                      <h4 className="font-extrabold text-sm">{j.name} ({j.zone})</h4>
-                      <p className="text-xs text-muted-foreground mt-1">Leader: {j.leader_name} ({j.leader_phone})</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Meets: {j.meeting_day} @ {j.meeting_location || 'N/A'}</p>
+                      <h4 className="font-extrabold text-sm">{gp.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{gp.description}</p>
+                      <div className="flex justify-between items-center text-[10px] font-bold mt-2 text-primary border-t pt-2">
+                        <span>Raised: KSh {gp.current_amount}</span>
+                        <span>Target: KSh {gp.target_amount}</span>
+                      </div>
                     </div>
-                    <button onClick={() => handleDelete('jumuiyas', j.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Jumuiya</button>
+                    <button onClick={() => handleDelete('giving_projects', gp.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Project</button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* SOCIETIES HUB DIRECTORY VIEW */}
-            {activeTab === 'societies' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {societies.map(s => (
-                  <button key={s.id} onClick={() => loadSocietyForEdit(s)} className={`text-left bg-card border p-4 rounded-xl shadow-sm hover:border-primary/40 transition-all flex flex-col justify-between space-y-2 ${socSelectCode === s.code ? 'border-primary shadow-md bg-primary/5' : ''}`}>
-                    <div>
-                      <h4 className="font-extrabold text-sm">{s.name}</h4>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{s.description}</p>
+            {/* REGISTRATIONS LIST MANAGER */}
+            {activeTab === 'registrations' && (
+              <div className="space-y-3">
+                {registrations.map(reg => (
+                  <div key={reg.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className="font-extrabold text-sm leading-tight text-primary">{reg.sacrament_type} Application</h4>
+                        <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${reg.status === 'approved' ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' : 'text-amber-600 bg-amber-500/10 border-amber-500/20'}`}>{reg.status}</span>
+                      </div>
+                      <p className="text-xs font-extrabold text-foreground mt-1">Candidate: {reg.applicant_name}</p>
+                      <p className="text-xs text-muted-foreground">Phone: {reg.phone_number}</p>
+                      {reg.parent_names && <p className="text-[10px] text-muted-foreground">Parents: {reg.parent_names}</p>}
+                      {reg.date_of_birth && <p className="text-[10px] text-muted-foreground">DOB: {reg.date_of_birth}</p>}
+                      {reg.details && Object.keys(reg.details).length > 0 && (
+                        <div className="text-[10px] text-muted-foreground bg-muted p-2 rounded mt-2 border">
+                          <strong>Details:</strong>
+                          <pre className="whitespace-pre-wrap font-sans mt-0.5 text-[9px]">{JSON.stringify(reg.details, null, 2)}</pre>
+                        </div>
+                      )}
                     </div>
-                    <span className="text-[10px] text-primary font-bold">Tap to edit details →</span>
-                  </button>
+                    {reg.status === 'pending' && (
+                      <button onClick={() => handleUpdateRegStatus(reg.id, 'approved')} className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg self-end sm:self-center shrink-0">Approve Request</button>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -1088,25 +1110,6 @@ export default function AdminPage() {
                       )}
                       <button onClick={() => handleModeratePrayer(p.id, false)} className="p-1.5 bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/20" title="Delete"><X className="w-4 h-4" /></button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* GIVING PROJECTS LIST */}
-            {activeTab === 'giving' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {givingProjects.map(gp => (
-                  <div key={gp.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
-                    <div>
-                      <h4 className="font-extrabold text-sm">{gp.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{gp.description}</p>
-                      <div className="flex justify-between items-center text-[10px] font-bold mt-2 text-primary border-t pt-2">
-                        <span>Raised: KSh {gp.current_amount}</span>
-                        <span>Target: KSh {gp.target_amount}</span>
-                      </div>
-                    </div>
-                    <button onClick={() => handleDelete('giving_projects', gp.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Project</button>
                   </div>
                 ))}
               </div>
@@ -1170,30 +1173,54 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* REGISTRATIONS LIST MANAGER */}
-            {activeTab === 'registrations' && (
-              <div className="space-y-3">
-                {registrations.map(reg => (
-                  <div key={reg.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-start gap-2">
-                        <h4 className="font-extrabold text-sm leading-tight text-primary">{reg.sacrament_type} Application</h4>
-                        <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${reg.status === 'approved' ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' : 'text-amber-600 bg-amber-500/10 border-amber-500/20'}`}>{reg.status}</span>
-                      </div>
-                      <p className="text-xs font-extrabold text-foreground mt-1">Candidate: {reg.applicant_name}</p>
-                      <p className="text-xs text-muted-foreground">Phone: {reg.phone_number}</p>
-                      {reg.parent_names && <p className="text-[10px] text-muted-foreground">Parents: {reg.parent_names}</p>}
-                      {reg.date_of_birth && <p className="text-[10px] text-muted-foreground">DOB: {reg.date_of_birth}</p>}
-                      {reg.details && Object.keys(reg.details).length > 0 && (
-                        <div className="text-[10px] text-muted-foreground bg-muted p-2 rounded mt-2 border">
-                          <strong>Details:</strong>
-                          <pre className="whitespace-pre-wrap font-sans mt-0.5 text-[9px]">{JSON.stringify(reg.details, null, 2)}</pre>
-                        </div>
-                      )}
+            {/* HISTORY LIST */}
+            {activeTab === 'history' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {historyEntries.map(entry => (
+                  <div key={entry.id} className="bg-card border p-4 rounded-xl flex flex-col justify-between space-y-3 shadow-sm">
+                    <div>
+                      <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">{entry.year}</span>
+                      <h4 className="font-extrabold text-sm mt-1">{entry.title}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-3 mt-1">{entry.content}</p>
                     </div>
-                    {reg.status === 'pending' && (
-                      <button onClick={() => handleUpdateRegStatus(reg.id, 'approved')} className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg self-end sm:self-center shrink-0">Approve Request</button>
-                    )}
+                    <button onClick={() => handleDelete('history_entries', entry.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Milestone</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* GALLERY LIST */}
+            {activeTab === 'gallery' && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {galleryImages.map(img => (
+                  <div key={img.id} className="bg-card border rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                    <img src={img.image_url} className="aspect-square object-cover" />
+                    <div className="p-3 space-y-2">
+                      <span className="text-[10px] bg-accent/15 text-accent px-2 py-0.5 rounded-full block w-fit font-bold">{img.category}</span>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{img.caption || 'No caption'}</p>
+                      <button onClick={() => handleDelete('gallery_images', img.id)} className="w-full py-1 bg-destructive/10 text-destructive text-[10px] font-bold rounded">Delete</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* THEME LIST */}
+            {activeTab === 'theme' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {themes.map(t => (
+                  <div key={t.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                      <h4 className="font-extrabold text-sm">{t.name}</h4>
+                      <div className="flex gap-2 mt-2">
+                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.primary_color }} />
+                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.secondary_color }} />
+                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.background_color }} />
+                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.foreground_color }} />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">Months: {t.start_month} to {t.end_month}</p>
+                    </div>
+                    <button onClick={() => handleDelete('theme_settings', t.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Remove Theme</button>
                   </div>
                 ))}
               </div>

@@ -8,6 +8,9 @@ export const metadata: Metadata = {
     template: "%s | Kabianga Parish",
     default: "Kabianga Parish - Welcome to Our Church Community",
   },
+  verification: {
+    google: "FGFcghGjaq4hXdgLmVup6F6WKz40EieegAoGv-ezzzg",
+  },
   description: "Welcome to Kabianga Parish, a vibrant Catholic community under the Kericho Diocese. Join us for Sunday Mass services, confessions, fellowship, and community outreach in Kabianga.",
   keywords: [
     "kabianga",
