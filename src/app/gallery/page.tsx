@@ -24,7 +24,7 @@ const DEFAULT_IMAGES: GalleryImage[] = [
   },
   {
     image_url: 'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=800',
-    caption: 'ACK Kabianga Sunday School class learning through play and music.',
+    caption: 'Kabianga Sunday School class learning through play and music.',
     category: 'Sunday School',
   },
   {
@@ -80,7 +80,7 @@ export default function GalleryPage() {
         </span>
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Photo Gallery</h1>
         <p className="text-muted-foreground text-sm max-w-xl">
-          Visual glimpses into the community, ministries, and events at ACK Kabianga Parish.
+          Visual glimpses into the community, ministries, and events at Kabianga Parish.
         </p>
       </div>
 

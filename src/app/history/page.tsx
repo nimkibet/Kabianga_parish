@@ -4,7 +4,7 @@ import { BookOpen, Calendar, MapPin } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Church History',
-  description: 'Learn about the rich history and heritage of ACK Kabianga Parish, from early missionary foundations to our growth as a parish.',
+  description: 'Learn about the rich history and heritage of Kabianga Parish, from early missionary foundations to our growth as a parish.',
 };
 
 interface HistoryEntry {
@@ -19,7 +19,7 @@ const DEFAULT_HISTORY: HistoryEntry[] = [
   {
     year: 1972,
     title: 'The Humble Beginning',
-    content: 'ACK Kabianga Parish started as a small fellowship under a tree. A group of seven faithful families gathered regularly for prayers, laying the foundation for what would become a cornerstone of faith in Kabianga.',
+    content: 'Kabianga Parish started as a small fellowship under a tree. A group of seven faithful families gathered regularly for prayers, laying the foundation for what would become a cornerstone of faith in Kabianga.',
     image_url: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=600',
   },
   {
@@ -30,7 +30,7 @@ const DEFAULT_HISTORY: HistoryEntry[] = [
   {
     year: 2001,
     title: 'Elevation to Parish Status',
-    content: 'Acknowledging the rapid growth of the local congregation and its surrounding outstations, the ACK Diocese of Kericho officially elevated Kabianga to a full Parish. Rev. John Langat was posted as the first resident Vicar.',
+    content: 'Acknowledging the rapid growth of the local congregation and its surrounding outstations, the Diocese of Kericho officially elevated Kabianga to a full Parish. Rev. John Langat was posted as the first resident Vicar.',
     image_url: 'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=600',
   },
   {
@@ -96,7 +96,7 @@ export default async function HistoryPage() {
                 </span>
                 <span className="text-xs text-muted-foreground font-semibold flex items-center space-x-1">
                   <MapPin className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>ACK Kabianga</span>
+                  <span>Kabianga Parish</span>
                 </span>
               </div>
 

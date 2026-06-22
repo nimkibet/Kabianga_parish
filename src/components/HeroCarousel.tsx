@@ -14,7 +14,7 @@ interface Slide {
 const DEFAULT_SLIDES: Slide[] = [
   {
     image_url: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=1200',
-    title: 'Welcome to ACK Kabianga Parish',
+    title: 'Welcome to Kabianga Parish',
     quote: '"I was glad when they said to me, \'Let us go to the house of the Lord.\'" — Psalm 122:1',
   },
   {

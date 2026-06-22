@@ -1,11 +1,27 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, Users, Compass, ShieldCheck } from 'lucide-react';
+import { Home, BookOpen, Users, Compass, ShieldCheck, Palette, Sun } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [isBypassed, setIsBypassed] = useState(false);
+
+  useEffect(() => {
+    // Check initial bypass state
+    const stored = localStorage.getItem('theme_bypass') === 'true';
+    setIsBypassed(stored);
+  }, []);
+
+  const toggleThemeBypass = () => {
+    const nextVal = !isBypassed;
+    localStorage.setItem('theme_bypass', String(nextVal));
+    setIsBypassed(nextVal);
+    // Dispatch custom event to trigger theme re-evaluation in ThemeProvider
+    window.dispatchEvent(new Event('theme-bypass-changed'));
+  };
 
   const navItems = [
     { name: 'Home', href: '/', icon: Home },
@@ -53,7 +69,6 @@ export default function Navbar() {
               );
             })}
             
-            {/* Additional Header Links for Desktop */}
             <div className="h-4 w-px bg-border mx-2"></div>
             <Link
               href="/history"
@@ -71,11 +86,26 @@ export default function Navbar() {
             >
               Gallery
             </Link>
+
+            <div className="h-4 w-px bg-border mx-2"></div>
+
+            {/* Theme Bypass Button */}
+            <button
+              onClick={toggleThemeBypass}
+              className={`touch-target p-2 rounded-lg transition-all flex items-center justify-center border ${
+                isBypassed
+                  ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30'
+                  : 'bg-muted text-foreground/75 border-border hover:bg-border'
+              }`}
+              title={isBypassed ? "Switch to Liturgical Colors" : "Switch to Default White Mode"}
+            >
+              {isBypassed ? <Sun className="w-4 h-4" /> : <Palette className="w-4 h-4" />}
+            </button>
           </nav>
         </div>
       </header>
 
-      {/* Mobile Top Bar (provides context, hides nav links) */}
+      {/* Mobile Top Bar */}
       <div className="sticky top-0 z-40 w-full border-b border-border bg-card/90 backdrop-blur-md px-4 py-3 flex items-center justify-between md:hidden">
         <div className="flex items-center space-x-2.5">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shadow">
@@ -85,20 +115,36 @@ export default function Navbar() {
             <h1 className="text-base font-bold tracking-tight text-foreground">Kabianga Parish</h1>
           </div>
         </div>
-        <Link
-          href="/admin"
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition-all ${
-            pathname.startsWith('/admin')
-              ? 'bg-primary text-white shadow-inner'
-              : 'bg-muted text-foreground/80 hover:bg-border'
-          }`}
-        >
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Admin</span>
-        </Link>
+
+        <div className="flex items-center space-x-2">
+          {/* Mobile Theme Bypass Button */}
+          <button
+            onClick={toggleThemeBypass}
+            className={`touch-target p-1.5 rounded-lg border flex items-center justify-center transition-all ${
+              isBypassed
+                ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30'
+                : 'bg-muted text-foreground/75 border-border'
+            }`}
+            aria-label="Toggle default light theme"
+          >
+            {isBypassed ? <Sun className="w-4.5 h-4.5" /> : <Palette className="w-4.5 h-4.5" />}
+          </button>
+
+          <Link
+            href="/admin"
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition-all ${
+              pathname.startsWith('/admin')
+                ? 'bg-primary text-white shadow-inner'
+                : 'bg-muted text-foreground/80 hover:bg-border'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Admin</span>
+          </Link>
+        </div>
       </div>
 
-      {/* Mobile Bottom Tab Bar (sticky at bottom) */}
+      {/* Mobile Bottom Tab Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-t border-border py-1 px-2 flex justify-around items-center md:hidden pb-safe-bottom shadow-lg">
         {navItems.map((item) => {
           const Icon = item.icon;
