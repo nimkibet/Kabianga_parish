@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  supabase 
-} from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { 
   Lock, 
   Mail, 
@@ -16,7 +14,17 @@ import {
   CheckCircle, 
   AlertTriangle,
   Loader2,
-  Calendar
+  Calendar,
+  Users,
+  Heart,
+  Coins,
+  FileText,
+  Clock,
+  Compass,
+  FileDown,
+  Volume2,
+  Check,
+  X
 } from 'lucide-react';
 import CloudinaryUploadWidget from '@/components/CloudinaryUploadWidget';
 
@@ -30,17 +38,32 @@ export default function AdminPage() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  // Dashboard state
-  const [activeTab, setActiveTab] = useState<'carousel' | 'history' | 'gallery' | 'theme'>('carousel');
+  // Tab control
+  const [activeTab, setActiveTab] = useState<
+    'carousel' | 'history' | 'gallery' | 'theme' | 'schedules' | 
+    'readings' | 'jumuiyas' | 'societies' | 'prayers' | 
+    'giving' | 'registrations' | 'bulletins' | 'sermons' | 'bookings'
+  >('carousel');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Data states
+  // Loaded DB data states
   const [slides, setSlides] = useState<any[]>([]);
   const [historyEntries, setHistoryEntries] = useState<any[]>([]);
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [themes, setThemes] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [readings, setReadings] = useState<any[]>([]);
+  const [jumuiyas, setJumuiyas] = useState<any[]>([]);
+  const [societies, setSocieties] = useState<any[]>([]);
+  const [prayers, setPrayers] = useState<any[]>([]);
+  const [givingProjects, setGivingProjects] = useState<any[]>([]);
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [bulletins, setBulletins] = useState<any[]>([]);
+  const [sermons, setSermons] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
 
-  // Form inputs state
+  // Form Inputs State
   // Carousel Form
   const [slideTitle, setSlideTitle] = useState('');
   const [slideQuote, setSlideQuote] = useState('');
@@ -57,14 +80,67 @@ export default function AdminPage() {
   const [galleryCustomCategory, setGalleryCustomCategory] = useState('');
   const [galleryCaption, setGalleryCaption] = useState('');
   const [galleryImageUrl, setGalleryImageUrl] = useState('');
+
   // Theme Settings state
   const [themeName, setThemeName] = useState('');
-  const [primaryColor, setPrimaryColor] = useState('#7c3aed');
-  const [secondaryColor, setSecondaryColor] = useState('#a78bfa');
-  const [backgroundColor, setBackgroundColor] = useState('#faf5ff');
-  const [foregroundColor, setForegroundColor] = useState('#1e1b4b');
+  const [primaryColor, setPrimaryColor] = useState('#16a34a');
+  const [secondaryColor, setSecondaryColor] = useState('#15803d');
+  const [backgroundColor, setBackgroundColor] = useState('#fafdfb');
+  const [foregroundColor, setForegroundColor] = useState('#14532d');
   const [startMonth, setStartMonth] = useState('1');
   const [endMonth, setEndMonth] = useState('12');
+
+  // Schedule Form
+  const [schedTitle, setSchedTitle] = useState('');
+  const [schedDay, setSchedDay] = useState('0'); // Sunday
+  const [schedStart, setSchedStart] = useState('');
+  const [schedEnd, setSchedEnd] = useState('');
+  const [schedDetails, setSchedDetails] = useState('');
+  const [schedType, setSchedType] = useState('Mass');
+
+  // Readings Form
+  const [readDate, setReadDate] = useState('');
+  const [readEngVerse, setReadEngVerse] = useState('');
+  const [readEngText, setReadEngText] = useState('');
+  const [readSwaVerse, setReadSwaVerse] = useState('');
+  const [readSwaText, setReadSwaText] = useState('');
+  const [ocrImageUrl, setOcrImageUrl] = useState('');
+  const [ocrLoading, setOcrLoading] = useState(false);
+
+  // Jumuiya Form
+  const [jName, setJName] = useState('');
+  const [jZone, setJZone] = useState('');
+  const [jLeader, setJLeader] = useState('');
+  const [jPhone, setJPhone] = useState('');
+  const [jDay, setJDay] = useState('');
+  const [jLocation, setJLocation] = useState('');
+
+  // Societies Form (editing existing)
+  const [socSelectCode, setSocSelectCode] = useState('');
+  const [socDesc, setSocDesc] = useState('');
+  const [socLeader, setSocLeader] = useState('');
+  const [socPattern, setSocPattern] = useState('');
+  const [socAnnounce, setSocAnnounce] = useState('');
+
+  // Giving Project Form
+  const [gpTitle, setGpTitle] = useState('');
+  const [gpDesc, setGpDesc] = useState('');
+  const [gpTarget, setGpTarget] = useState('');
+  const [gpCurrent, setGpCurrent] = useState('0');
+  const [gpPaybillAcc, setGpPaybillAcc] = useState('');
+
+  // Bulletin Form
+  const [bullTitle, setBullTitle] = useState('');
+  const [bullUrl, setBullUrl] = useState('');
+  const [bullDate, setBullDate] = useState('');
+
+  // Sermon Form
+  const [sermTitle, setSermTitle] = useState('');
+  const [sermPreacher, setSermPreacher] = useState('');
+  const [sermVerse, setSermVerse] = useState('');
+  const [sermSummary, setSermSummary] = useState('');
+  const [sermAudioUrl, setSermAudioUrl] = useState('');
+  const [sermDate, setSermDate] = useState('');
 
   // Track session
   useEffect(() => {
@@ -80,7 +156,7 @@ export default function AdminPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch data depending on session and activeTab
+  // Fetch data depending on activeTab
   useEffect(() => {
     if (!session) return;
     fetchData();
@@ -95,26 +171,64 @@ export default function AdminPage() {
     setDataLoading(true);
     try {
       if (activeTab === 'carousel') {
-        const { data, error } = await supabase
-          .from('carousel_slides')
-          .select('*')
-          .order('display_order', { ascending: true });
+        const { data, error } = await supabase.from('carousel_slides').select('*').order('display_order', { ascending: true });
         if (error) throw error;
         setSlides(data || []);
       } else if (activeTab === 'history') {
-        const { data, error } = await supabase
-          .from('history_entries')
-          .select('*')
-          .order('year', { ascending: true });
+        const { data, error } = await supabase.from('history_entries').select('*').order('year', { ascending: true });
         if (error) throw error;
         setHistoryEntries(data || []);
       } else if (activeTab === 'gallery') {
-        const { data, error } = await supabase
-          .from('gallery_images')
-          .select('*')
-          .order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('gallery_images').select('*').order('created_at', { ascending: false });
         if (error) throw error;
         setGalleryImages(data || []);
+      } else if (activeTab === 'theme') {
+        const { data, error } = await supabase.from('theme_settings').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        setThemes(data || []);
+      } else if (activeTab === 'schedules') {
+        const { data, error } = await supabase.from('service_schedules').select('*').order('day_of_week', { ascending: true });
+        if (error) throw error;
+        setSchedules(data || []);
+      } else if (activeTab === 'readings') {
+        const { data, error } = await supabase.from('daily_readings').select('*').order('date', { ascending: false }).limit(20);
+        if (error) throw error;
+        setReadings(data || []);
+      } else if (activeTab === 'jumuiyas') {
+        const { data, error } = await supabase.from('jumuiyas').select('*').order('name', { ascending: true });
+        if (error) throw error;
+        setJumuiyas(data || []);
+      } else if (activeTab === 'societies') {
+        const { data, error } = await supabase.from('societies').select('*').order('name', { ascending: true });
+        if (error) throw error;
+        setSocieties(data || []);
+        if (data && data.length > 0 && !socSelectCode) {
+          loadSocietyForEdit(data[0]);
+        }
+      } else if (activeTab === 'prayers') {
+        const { data, error } = await supabase.from('prayer_requests').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        setPrayers(data || []);
+      } else if (activeTab === 'giving') {
+        const { data, error } = await supabase.from('giving_projects').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        setGivingProjects(data || []);
+      } else if (activeTab === 'registrations') {
+        const { data, error } = await supabase.from('sacramental_registrations').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        setRegistrations(data || []);
+      } else if (activeTab === 'bulletins') {
+        const { data, error } = await supabase.from('bulletin_archives').select('*').order('publish_date', { ascending: false });
+        if (error) throw error;
+        setBulletins(data || []);
+      } else if (activeTab === 'sermons') {
+        const { data, error } = await supabase.from('sermons').select('*').order('date', { ascending: false });
+        if (error) throw error;
+        setSermons(data || []);
+      } else if (activeTab === 'bookings') {
+        const { data, error } = await supabase.from('equipment_bookings').select('*').order('start_date', { ascending: false });
+        if (error) throw error;
+        setBookings(data || []);
       }
     } catch (err: any) {
       console.error('Fetch error:', err.message);
@@ -142,178 +256,291 @@ export default function AdminPage() {
     await supabase.auth.signOut();
   };
 
-  // Carousel Submit
+  // Cloudinary Success Wrappers
   const handleAddSlide = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!slideImageUrl) {
-      showNotification('error', 'Please upload an image first.');
-      return;
-    }
+    if (!slideImageUrl) return showNotification('error', 'Please upload an image first.');
     try {
       const displayOrder = slides.length > 0 ? Math.max(...slides.map(s => s.display_order || 0)) + 1 : 0;
       const { error } = await supabase.from('carousel_slides').insert({
-        title: slideTitle,
-        quote: slideQuote,
-        image_url: slideImageUrl,
-        display_order: displayOrder,
+        title: slideTitle, quote: slideQuote, image_url: slideImageUrl, display_order: displayOrder
       });
-
       if (error) throw error;
-
-      showNotification('success', 'Carousel slide added successfully!');
-      setSlideTitle('');
-      setSlideQuote('');
-      setSlideImageUrl('');
+      showNotification('success', 'Slide added successfully!');
+      setSlideTitle(''); setSlideQuote(''); setSlideImageUrl('');
       fetchData();
-    } catch (err: any) {
-      showNotification('error', `Failed to save slide: ${err.message}`);
-    }
+    } catch (err: any) { showNotification('error', err.message); }
   };
 
-  // History Submit
   const handleAddHistory = async (e: React.FormEvent) => {
     e.preventDefault();
     const yearNum = parseInt(historyYear);
-    if (isNaN(yearNum)) {
-      showNotification('error', 'Please enter a valid numeric year.');
-      return;
-    }
+    if (isNaN(yearNum)) return showNotification('error', 'Enter a numeric year.');
     try {
       const { error } = await supabase.from('history_entries').insert({
-        year: yearNum,
-        title: historyTitle,
-        content: historyContent,
-        image_url: historyImageUrl || null,
+        year: yearNum, title: historyTitle, content: historyContent, image_url: historyImageUrl || null
       });
-
       if (error) throw error;
-
-      showNotification('success', 'History entry added successfully!');
-      setHistoryYear('');
-      setHistoryTitle('');
-      setHistoryContent('');
-      setHistoryImageUrl('');
+      showNotification('success', 'History entry added!');
+      setHistoryYear(''); setHistoryTitle(''); setHistoryContent(''); setHistoryImageUrl('');
       fetchData();
-    } catch (err: any) {
-      showNotification('error', `Failed to save history entry: ${err.message}`);
-    }
+    } catch (err: any) { showNotification('error', err.message); }
   };
 
-  // Gallery Submit
   const handleAddGallery = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!galleryImageUrl) {
-      showNotification('error', 'Please upload a gallery image first.');
-      return;
-    }
-    const finalCategory = galleryCategory === 'Custom' ? galleryCustomCategory : galleryCategory;
-    if (!finalCategory.trim()) {
-      showNotification('error', 'Please specify a category.');
-      return;
-    }
+    if (!galleryImageUrl) return showNotification('error', 'Please upload photo.');
+    const cat = galleryCategory === 'Custom' ? galleryCustomCategory : galleryCategory;
     try {
       const { error } = await supabase.from('gallery_images').insert({
-        image_url: galleryImageUrl,
-        caption: galleryCaption,
-        category: finalCategory.trim(),
+        image_url: galleryImageUrl, caption: galleryCaption, category: cat
       });
-
       if (error) throw error;
-
-      showNotification('success', 'Gallery image added successfully!');
-      setGalleryCaption('');
-      setGalleryImageUrl('');
-      setGalleryCustomCategory('');
+      showNotification('success', 'Photo added!');
+      setGalleryCaption(''); setGalleryImageUrl(''); setGalleryCustomCategory('');
       fetchData();
-    } catch (err: any) {
-      showNotification('error', `Failed to save gallery item: ${err.message}`);
-    }
+    } catch (err: any) { showNotification('error', err.message); }
   };
 
-  // Theme Settings Submit
   const handleAddTheme = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const { error } = await supabase.from('theme_settings').insert({
-        name: themeName,
-        primary_color: primaryColor,
-        secondary_color: secondaryColor,
-        background_color: backgroundColor,
-        foreground_color: foregroundColor,
-        start_month: parseInt(startMonth),
-        end_month: parseInt(endMonth),
+        name: themeName, primary_color: primaryColor, secondary_color: secondaryColor,
+        background_color: backgroundColor, foreground_color: foregroundColor,
+        start_month: parseInt(startMonth), end_month: parseInt(endMonth)
       });
       if (error) throw error;
       showNotification('success', 'Theme added successfully!');
-      // reset fields
       setThemeName('');
-      setPrimaryColor('#7c3aed');
-      setSecondaryColor('#a78bfa');
-      setBackgroundColor('#faf5ff');
-      setForegroundColor('#1e1b4b');
-      setStartMonth('1');
-      setEndMonth('12');
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const handleAddSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('service_schedules').insert({
+        title: schedTitle, day_of_week: parseInt(schedDay), start_time: `${schedStart}:00`,
+        end_time: `${schedEnd}:00`, details: schedDetails, type: schedType
+      });
+      if (error) throw error;
+      showNotification('success', 'Schedule added!');
+      setSchedTitle(''); setSchedStart(''); setSchedEnd(''); setSchedDetails('');
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const handleAddReading = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('daily_readings').insert({
+        date: readDate, english_reading: readEngText, swahili_reading: readSwaText,
+        english_verse: readEngVerse, swahili_verse: readSwaVerse
+      });
+      if (error) throw error;
+      showNotification('success', 'Daily Readings added!');
+      setReadDate(''); setReadEngVerse(''); setReadEngText(''); setReadSwaVerse(''); setReadSwaText(''); setOcrImageUrl('');
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const runOcrExtractor = async () => {
+    if (!ocrImageUrl) return showNotification('error', 'Upload a screenshot image first.');
+    setOcrLoading(true);
+    try {
+      const res = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: ocrImageUrl }),
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'OCR failed');
+      
+      // Auto fill Swahili/English text area depending on layout
+      // Defaulting to appending extracted text to Swahili Reading
+      setReadSwaText(prev => prev ? `${prev}\n\n${resData.text}` : resData.text);
+      showNotification('success', 'Successfully extracted text and appended to Kiswahili Reading text area!');
     } catch (err: any) {
-      showNotification('error', `Failed to save theme: ${err.message}`);
+      showNotification('error', `OCR Error: ${err.message}`);
+    } finally {
+      setOcrLoading(false);
     }
   };
 
-  // Delete handlers
+  const handleAddJumuiya = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('jumuiyas').insert({
+        name: jName, zone: jZone, leader_name: jLeader, leader_phone: jPhone,
+        meeting_day: jDay, meeting_location: jLocation
+      });
+      if (error) throw error;
+      showNotification('success', 'Jumuiya added!');
+      setJName(''); setJZone(''); setJLeader(''); setJPhone(''); setJDay(''); setJLocation('');
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const loadSocietyForEdit = (soc: any) => {
+    setSocSelectCode(soc.code);
+    setSocDesc(soc.description || '');
+    setSocLeader(soc.leadership || '');
+    setSocPattern(soc.meeting_pattern || '');
+    setSocAnnounce(soc.announcements || '');
+  };
+
+  const handleUpdateSociety = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase
+        .from('societies')
+        .update({
+          description: socDesc,
+          leadership: socLeader,
+          meeting_pattern: socPattern,
+          announcements: socAnnounce
+        })
+        .eq('code', socSelectCode);
+      
+      if (error) throw error;
+      showNotification('success', 'Society updated successfully!');
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const handleAddGiving = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('giving_projects').insert({
+        title: gpTitle, description: gpDesc, target_amount: parseFloat(gpTarget),
+        current_amount: parseFloat(gpCurrent) || 0, paybill_account: gpPaybillAcc
+      });
+      if (error) throw error;
+      showNotification('success', 'Project added!');
+      setGpTitle(''); setGpDesc(''); setGpTarget(''); setGpCurrent('0'); setGpPaybillAcc('');
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const handleAddBulletin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bullUrl) return showNotification('error', 'Upload PDF document.');
+    try {
+      const { error } = await supabase.from('bulletin_archives').insert({
+        title: bullTitle, file_url: bullUrl, publish_date: bullDate || new Date().toISOString().split('T')[0]
+      });
+      if (error) throw error;
+      showNotification('success', 'Bulletin saved!');
+      setBullTitle(''); setBullUrl(''); setBullDate('');
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const handleAddSermon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('sermons').insert({
+        title: sermTitle, preacher: sermPreacher, scripture_reference: sermVerse,
+        summary: sermSummary, audio_url: sermAudioUrl || null,
+        date: sermDate || new Date().toISOString().split('T')[0]
+      });
+      if (error) throw error;
+      showNotification('success', 'Sermon added!');
+      setSermTitle(''); setSermPreacher(''); setSermVerse(''); setSermSummary(''); setSermAudioUrl(''); setSermDate('');
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  // Booking action controls
+  const handleUpdateBooking = async (id: string, status: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('equipment_bookings')
+        .update({ status: status })
+        .eq('id', id);
+      
+      if (error) throw error;
+      showNotification('success', `Booking request ${status}!`);
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  // Moderation of prayers
+  const handleModeratePrayer = async (id: string, approve: boolean) => {
+    try {
+      if (approve) {
+        const { error } = await supabase.from('prayer_requests').update({ is_moderated: true }).eq('id', id);
+        if (error) throw error;
+        showNotification('success', 'Prayer request approved!');
+      } else {
+        const { error } = await supabase.from('prayer_requests').delete().eq('id', id);
+        if (error) throw error;
+        showNotification('success', 'Prayer request deleted!');
+      }
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  // Sacramental status
+  const handleUpdateRegStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase.from('sacramental_registrations').update({ status }).eq('id', id);
+      if (error) throw error;
+      showNotification('success', 'Registration status updated!');
+      fetchData();
+    } catch (err: any) { showNotification('error', err.message); }
+  };
+
   const handleDelete = async (table: string, id: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
+    if (!confirm('Are you sure you want to delete this?')) return;
     try {
       const { error } = await supabase.from(table).delete().eq('id', id);
       if (error) throw error;
-      showNotification('success', 'Item deleted successfully!');
+      showNotification('success', 'Item deleted!');
       fetchData();
-    } catch (err: any) {
-      showNotification('error', `Failed to delete item: ${err.message}`);
-    }
+    } catch (err: any) { showNotification('error', err.message); }
   };
 
   if (loadingSession) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <p className="text-sm font-medium text-muted-foreground">Verifying access credentials...</p>
+        <p className="text-sm font-semibold text-muted-foreground">Authenticating admin session...</p>
       </div>
     );
   }
 
-  // LOGIN SCREEN
+  // LOGIN INTERFACE
   if (!session) {
     return (
       <div className="flex flex-col justify-center items-center py-10 sm:py-20 px-4">
         <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
-          {/* Form Header */}
           <div className="p-6 bg-gradient-to-br from-primary to-purple-800 text-white text-center space-y-2">
-            <div className="w-12 h-12 bg-white/15 rounded-full flex items-center justify-center mx-auto border border-white/20 shadow-inner">
+            <div className="w-12 h-12 bg-white/15 rounded-full flex items-center justify-center mx-auto border border-white/20">
               <Lock className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-extrabold tracking-tight">Admin Secretary Portal</h1>
-            <p className="text-xs text-purple-100 font-medium">ACK Kabianga Parish</p>
+            <h1 className="text-xl font-extrabold tracking-tight font-sans">Admin Secretary Portal</h1>
+            <p className="text-xs text-purple-100 font-medium">Kabianga Parish Administration</p>
           </div>
 
-          {/* Form body */}
           <form onSubmit={handleLogin} className="p-6 space-y-5">
             {authError && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold rounded-xl flex items-start space-x-2 animate-shake">
+              <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold rounded-xl flex items-start space-x-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{authError}</span>
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label htmlFor="email" className="text-xs font-bold text-foreground/80 block">
-                Secretary Email Address
-              </label>
+              <label htmlFor="email" className="text-xs font-bold text-foreground/80 block">Secretary Email Address</label>
               <div className="relative">
                 <Mail className="w-4.5 h-4.5 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   id="email"
                   type="email"
                   required
-                  placeholder="name@ackkabiangaparish.or.ke"
+                  placeholder="admin@parishkabianga.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all touch-friendly-input"
@@ -322,9 +549,7 @@ export default function AdminPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="password" className="text-xs font-bold text-foreground/80 block">
-                Access Password
-              </label>
+              <label htmlFor="password" className="text-xs font-bold text-foreground/80 block">Access Password</label>
               <div className="relative">
                 <Lock className="w-4.5 h-4.5 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -342,42 +567,31 @@ export default function AdminPage() {
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full touch-target mt-2 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-hover active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
+              className="w-full touch-target mt-2 py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary-hover active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
             >
-              {authLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Logging in...</span>
-                </>
-              ) : (
-                <span>Authenticate Access</span>
-              )}
+              {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              <span>Authenticate Access</span>
             </button>
-
-            <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
-              Protected Administrator Area. Authorized personnel only. If you need credentials, 
-              please contact the Diocese Database Administrator.
-            </p>
           </form>
         </div>
       </div>
     );
   }
 
-  // ADMIN WORKSPACE
+  // LOGGED-IN ADMIN CONSOLE
   return (
-    <div className="space-y-8 pb-10">
-      {/* Header bar */}
+    <div className="space-y-8 pb-20">
+      {/* Admin header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4 gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2">
-            Secretary Portal
-            <span className="text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-              Live
+          <h1 className="text-2xl font-extrabold text-foreground flex items-center gap-2">
+            Parish Secretary Workspace
+            <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+              Connected
             </span>
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Logged in as: <span className="font-bold text-foreground/80">{session.user.email}</span>
+            Logged in: <span className="font-bold text-foreground/80">{session.user.email}</span>
           </p>
         </div>
         <button
@@ -389,491 +603,605 @@ export default function AdminPage() {
         </button>
       </div>
 
-      {/* Notifications banner */}
       {notification && (
         <div className={`p-4 rounded-xl border flex items-start space-x-2 animate-fade-in ${
-          notification.type === 'success' 
-            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400'
-            : 'bg-destructive/10 border-destructive/20 text-destructive'
+          notification.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700' : 'bg-destructive/10 border-destructive/20 text-destructive'
         }`}>
-          {notification.type === 'success' ? (
-            <CheckCircle className="w-5 h-5 shrink-0" />
-          ) : (
-            <AlertTriangle className="w-5 h-5 shrink-0" />
-          )}
+          {notification.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <AlertTriangle className="w-5 h-5 shrink-0" />}
           <span className="text-xs sm:text-sm font-semibold">{notification.message}</span>
         </div>
       )}
 
-      {/* Navigation tabs */}
-      <div className="flex border-b border-border overflow-x-auto no-scrollbar">
-        <button
-          onClick={() => setActiveTab('carousel')}
-          className={`touch-target px-5 py-3 border-b-2 font-bold text-xs whitespace-nowrap transition-all flex items-center space-x-1.5 ${
-            activeTab === 'carousel'
-              ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Sliders className="w-4 h-4" />
-          <span>Carousel Slides</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`touch-target px-5 py-3 border-b-2 font-bold text-xs whitespace-nowrap transition-all flex items-center space-x-1.5 ${
-            activeTab === 'history'
-              ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <BookOpen className="w-4 h-4" />
-          <span>History Entries</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('gallery')}
-          className={`touch-target px-5 py-3 border-b-2 font-bold text-xs whitespace-nowrap transition-all flex items-center space-x-1.5 ${
-            activeTab === 'gallery'
-              ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <GalleryIcon className="w-4 h-4" />
-          <span>Photo Gallery</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('theme')}
-          className={`touch-target px-5 py-3 border-b-2 font-bold text-xs whitespace-nowrap transition-all flex items-center space-x-1.5 ${
-            activeTab === 'theme'
-              ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Sliders className="w-4 h-4" />
-          <span>Theme Settings</span>
-        </button>
-      </div>
+      {/* Tabs Layout */}
+      <div className="flex flex-col space-y-4">
+        {/* Horizontal scroll tabs list */}
+        <div className="flex border-b border-border overflow-x-auto no-scrollbar pb-1 gap-1">
+          {[
+            { id: 'carousel', label: 'Hero Slides', icon: Sliders },
+            { id: 'history', label: 'History Milestones', icon: BookOpen },
+            { id: 'gallery', label: 'Photo Gallery', icon: GalleryIcon },
+            { id: 'theme', label: 'Theme settings', icon: Sliders },
+            { id: 'schedules', label: 'Service Schedules', icon: Clock },
+            { id: 'readings', label: 'Bible Readings', icon: BookOpen },
+            { id: 'jumuiyas', label: 'Jumuiyas Directory', icon: Users },
+            { id: 'societies', label: 'Societies Groups', icon: Compass },
+            { id: 'prayers', label: 'Moderation Wall', icon: Heart },
+            { id: 'giving', label: 'Giving Projects', icon: Coins },
+            { id: 'registrations', label: 'Sacrament Registry', icon: FileText },
+            { id: 'bulletins', label: 'Weekly Bulletins', icon: FileDown },
+            { id: 'sermons', label: 'Sermon Summaries', icon: Volume2 },
+            { id: 'bookings', label: 'Asset Bookings', icon: Calendar },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`touch-target px-4 py-2 border-b-2 font-bold text-xs whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+                  activeTab === tab.id
+                    ? 'border-primary text-primary bg-primary/5'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Active Tab Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Columns: Inputs/Uploader Form */}
-        <div className="lg:col-span-1 bg-card border border-border p-6 rounded-2xl shadow-sm h-fit">
+        {/* Tab Layout Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* TAB 1: Add Carousel Slide */}
-          {activeTab === 'carousel' && (
-            <form onSubmit={handleAddSlide} className="space-y-4">
-              <h2 className="text-base font-bold text-foreground border-b border-border pb-2">
-                New Carousel Slide
-              </h2>
-              
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">1. Upload Image (Cloudinary)</label>
-                {slideImageUrl ? (
-                  <div className="relative rounded-xl overflow-hidden aspect-video border border-border">
-                    <img src={slideImageUrl} alt="Uploaded slide" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setSlideImageUrl('')}
-                      className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/85"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <CloudinaryUploadWidget
-                    onUploadSuccess={(url) => setSlideImageUrl(url)}
-                    buttonText="Upload Slide Photo"
-                    className="w-full text-xs py-3"
-                    croppingAspectRatio={16/9}
-                  />
-                )}
-                {slideImageUrl && (
-                  <p className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span>Upload successful!</span>
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <label htmlFor="slideTitle" className="text-xs font-bold text-muted-foreground">
-                  2. Slide Title
-                </label>
-                <input
-                  id="slideTitle"
-                  type="text"
-                  required
-                  placeholder="Welcome to Kabianga Parish"
-                  value={slideTitle}
-                  onChange={(e) => setSlideTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all touch-friendly-input"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label htmlFor="slideQuote" className="text-xs font-bold text-muted-foreground">
-                  3. Inspirational Quote (Optional)
-                </label>
-                <textarea
-                  id="slideQuote"
-                  rows={3}
-                  placeholder="Enter a Bible verse or inspiring message..."
-                  value={slideQuote}
-                  onChange={(e) => setSlideQuote(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!slideImageUrl}
-                className="w-full touch-target bg-primary text-white text-xs font-bold py-2.5 rounded-xl shadow-md hover:bg-primary-hover active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center space-x-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Save Carousel Slide</span>
-              </button>
-            </form>
-          )}
-
-          {/* TAB 2: Add History Entry */}
-          {activeTab === 'history' && (
-            <form onSubmit={handleAddHistory} className="space-y-4">
-              <h2 className="text-base font-bold text-foreground border-b border-border pb-2">
-                New History Milestone
-              </h2>
-
-              <div className="space-y-1">
-                <label htmlFor="historyYear" className="text-xs font-bold text-muted-foreground">
-                  1. Year
-                </label>
-                <div className="relative">
-                  <Calendar className="w-4.5 h-4.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    id="historyYear"
-                    type="number"
-                    required
-                    placeholder="e.g. 1984"
-                    value={historyYear}
-                    onChange={(e) => setHistoryYear(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all touch-friendly-input"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label htmlFor="historyTitle" className="text-xs font-bold text-muted-foreground">
-                  2. Milestone Title
-                </label>
-                <input
-                  id="historyTitle"
-                  type="text"
-                  required
-                  placeholder="Building the sanctuary"
-                  value={historyTitle}
-                  onChange={(e) => setHistoryTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all touch-friendly-input"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label htmlFor="historyContent" className="text-xs font-bold text-muted-foreground">
-                  3. Description Content
-                </label>
-                <textarea
-                  id="historyContent"
-                  rows={4}
-                  required
-                  placeholder="Provide historical context and information..."
-                  value={historyContent}
-                  onChange={(e) => setHistoryContent(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">
-                  4. Image (Optional, Cloudinary)
-                </label>
-                {historyImageUrl ? (
-                  <div className="relative rounded-xl overflow-hidden aspect-video border border-border">
-                    <img src={historyImageUrl} alt="Uploaded history image" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setHistoryImageUrl('')}
-                      className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/85"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <CloudinaryUploadWidget
-                    onUploadSuccess={(url) => setHistoryImageUrl(url)}
-                    buttonText="Upload History Photo"
-                    className="w-full text-xs py-3 bg-secondary hover:bg-purple-400"
-                  />
-                )}
-              </div>
-
-              <button
-                type="submit"
-                className="w-full touch-target bg-primary text-white text-xs font-bold py-2.5 rounded-xl shadow-md hover:bg-primary-hover active:scale-95 transition-all flex items-center justify-center space-x-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Save History Entry</span>
-              </button>
-            </form>
-          )}
-
-          {/* TAB 3: Add Gallery Image */}
-          {activeTab === 'gallery' && (
-            <form onSubmit={handleAddGallery} className="space-y-4">
-              <h2 className="text-base font-bold text-foreground border-b border-border pb-2">
-                New Gallery Image
-              </h2>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-muted-foreground">1. Upload Image (Cloudinary)</label>
-                {galleryImageUrl ? (
-                  <div className="relative rounded-xl overflow-hidden aspect-square border border-border">
-                    <img src={galleryImageUrl} alt="Uploaded gallery" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setGalleryImageUrl('')}
-                      className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/85"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <CloudinaryUploadWidget
-                    onUploadSuccess={(url) => setGalleryImageUrl(url)}
-                    buttonText="Upload Gallery Photo"
-                    className="w-full text-xs py-3"
-                  />
-                )}
-                {galleryImageUrl && (
-                  <p className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span>Upload successful!</span>
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <label htmlFor="galleryCategory" className="text-xs font-bold text-muted-foreground">
-                  2. Photo Category
-                </label>
-                <select
-                  id="galleryCategory"
-                  value={galleryCategory}
-                  onChange={(e) => setGalleryCategory(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all touch-friendly-input"
-                >
-                  <option value="General">General</option>
-                  <option value="Sunday Service">Sunday Service</option>
-                  <option value="Choir">Choir</option>
-                  <option value="Youth">Youth</option>
-                  <option value="Sunday School">Sunday School</option>
-                  <option value="Community">Community</option>
-                  <option value="Custom">-- Add Custom Category --</option>
-                </select>
-              </div>
-
-              {galleryCategory === 'Custom' && (
+          {/* Form column (Left) */}
+          <div className="lg:col-span-1 bg-card border border-border p-6 rounded-2xl shadow-sm h-fit space-y-4">
+            
+            {/* CAROUSEL FORM */}
+            {activeTab === 'carousel' && (
+              <form onSubmit={handleAddSlide} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">New Hero Slide</h2>
                 <div className="space-y-1">
-                  <label htmlFor="galleryCustomCategory" className="text-xs font-bold text-accent">
-                    Define Custom Category Name
-                  </label>
-                  <input
-                    id="galleryCustomCategory"
-                    type="text"
-                    required
-                    placeholder="e.g. Easter 2026"
-                    value={galleryCustomCategory}
-                    onChange={(e) => setGalleryCustomCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-accent bg-background text-sm focus:outline-none focus:ring-1 focus:ring-accent focus:border-transparent transition-all touch-friendly-input"
-                  />
+                  <label className="text-xs font-bold text-muted-foreground">Upload Image</label>
+                  {slideImageUrl ? (
+                    <div className="relative rounded overflow-hidden aspect-video border"><img src={slideImageUrl} className="object-cover w-full h-full" /><button onClick={() => setSlideImageUrl('')} className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full"><Trash2 className="w-3.5 h-3.5" /></button></div>
+                  ) : (
+                    <CloudinaryUploadWidget onUploadSuccess={setSlideImageUrl} buttonText="Select Slide Photo" croppingAspectRatio={16/9} />
+                  )}
                 </div>
-              )}
-
-              <div className="space-y-1">
-                <label htmlFor="galleryCaption" className="text-xs font-bold text-muted-foreground">
-                  3. Image Caption / Quote
-                </label>
-                <textarea
-                  id="galleryCaption"
-                  rows={3}
-                  placeholder="Describe this photo for our community..."
-                  value={galleryCaption}
-                  onChange={(e) => setGalleryCaption(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!galleryImageUrl}
-                className="w-full touch-target bg-primary text-white text-xs font-bold py-2.5 rounded-xl shadow-md hover:bg-primary-hover active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center space-x-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Save to Photo Gallery</span>
-              </button>
-            </form>
-          )}
-
-          {activeTab === 'theme' && (
-              <form onSubmit={handleAddTheme} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b border-border pb-2">
-                  Theme Settings
-                </h2>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-muted-foreground">Theme Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g., Easter"
-                    value={themeName}
-                    onChange={(e) => setThemeName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all"
-                  />
+                  <label className="text-xs font-bold text-muted-foreground">Slide Title</label>
+                  <input type="text" required placeholder="Welcome message..." value={slideTitle} onChange={e => setSlideTitle(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-muted-foreground">Primary Color</label>
-                    <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-full h-10 rounded-xl border border-border" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-muted-foreground">Secondary Color</label>
-                    <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="w-full h-10 rounded-xl border border-border" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-muted-foreground">Background Color</label>
-                    <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} className="w-full h-10 rounded-xl border border-border" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-muted-foreground">Foreground Color</label>
-                    <input type="color" value={foregroundColor} onChange={(e) => setForegroundColor(e.target.value)} className="w-full h-10 rounded-xl border border-border" />
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Verse / Quote</label>
+                  <textarea rows={3} placeholder="Isaiah 40..." value={slideQuote} onChange={e => setSlideQuote(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-muted-foreground">Start Month (1-12)</label>
-                    <input type="number" min="1" max="12" value={startMonth} onChange={(e) => setStartMonth(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-border" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-muted-foreground">End Month (1-12)</label>
-                    <input type="number" min="1" max="12" value={endMonth} onChange={(e) => setEndMonth(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-border" />
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full touch-target bg-primary text-white text-xs font-bold py-2.5 rounded-xl shadow-md hover:bg-primary-hover active:scale-95 transition-all flex items-center justify-center"
-                >
-                  Save Theme
-                </button>
+                <button type="submit" disabled={!slideImageUrl} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50">Save Slide</button>
               </form>
             )}
 
-        </div>
+            {/* HISTORY FORM */}
+            {activeTab === 'history' && (
+              <form onSubmit={handleAddHistory} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">New Milestone</h2>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Year</label><input type="number" required placeholder="1990" value={historyYear} onChange={e => setHistoryYear(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Milestone Title</label><input type="text" required placeholder="First church building" value={historyTitle} onChange={e => setHistoryTitle(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Description</label><textarea rows={3} required placeholder="Milestone details" value={historyContent} onChange={e => setHistoryContent(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Milestone Image (Optional)</label>
+                  {historyImageUrl ? (
+                    <div className="relative rounded overflow-hidden aspect-video border"><img src={historyImageUrl} className="object-cover w-full h-full" /><button onClick={() => setHistoryImageUrl('')} className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full"><Trash2 className="w-3.5 h-3.5" /></button></div>
+                  ) : (
+                    <CloudinaryUploadWidget onUploadSuccess={setHistoryImageUrl} buttonText="Upload Photo" />
+                  )}
+                </div>
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Milestone</button>
+              </form>
+            )}
 
-        {/* Right Columns: Data List View */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex justify-between items-center border-b border-border pb-2">
-            <h2 className="text-base font-extrabold text-foreground">
-              Existing Entries ({activeTab === 'carousel' ? slides.length : activeTab === 'history' ? historyEntries.length : galleryImages.length})
-            </h2>
-            {dataLoading && <Loader2 className="w-4.5 h-4.5 text-primary animate-spin" />}
+            {/* GALLERY FORM */}
+            {activeTab === 'gallery' && (
+              <form onSubmit={handleAddGallery} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">Add Gallery Photo</h2>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Upload Image</label>
+                  {galleryImageUrl ? (
+                    <div className="relative rounded overflow-hidden aspect-square border"><img src={galleryImageUrl} className="object-cover w-full h-full" /><button onClick={() => setGalleryImageUrl('')} className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full"><Trash2 className="w-3.5 h-3.5" /></button></div>
+                  ) : (
+                    <CloudinaryUploadWidget onUploadSuccess={setGalleryImageUrl} buttonText="Select Gallery Photo" />
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Category</label>
+                  <select value={galleryCategory} onChange={e => setGalleryCategory(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm">
+                    <option value="General">General</option>
+                    <option value="Sunday Service">Sunday Service</option>
+                    <option value="Choir">Choir</option>
+                    <option value="Youth">Youth</option>
+                    <option value="Custom">-- Custom Category --</option>
+                  </select>
+                </div>
+                {galleryCategory === 'Custom' && (
+                  <div className="space-y-1"><label className="text-xs font-bold text-accent">Define Custom Category</label><input type="text" required placeholder="Easter 2026" value={galleryCustomCategory} onChange={e => setGalleryCustomCategory(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                )}
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Caption</label><textarea rows={3} placeholder="Photo details..." value={galleryCaption} onChange={e => setGalleryCaption(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <button type="submit" disabled={!galleryImageUrl} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50">Add Photo</button>
+              </form>
+            )}
+
+            {/* THEME FORM */}
+            {activeTab === 'theme' && (
+              <form onSubmit={handleAddTheme} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">Add Season Theme</h2>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Theme Name</label><input type="text" required placeholder="Lent" value={themeName} onChange={e => setThemeName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-[10px] font-bold block mb-1">Primary Color</label><input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="w-full h-9 rounded-lg border" /></div>
+                  <div><label className="text-[10px] font-bold block mb-1">Hover Color</label><input type="color" value={secondaryColor} onChange={e => setSecondaryColor(e.target.value)} className="w-full h-9 rounded-lg border" /></div>
+                  <div><label className="text-[10px] font-bold block mb-1">Background</label><input type="color" value={backgroundColor} onChange={e => setBackgroundColor(e.target.value)} className="w-full h-9 rounded-lg border" /></div>
+                  <div><label className="text-[10px] font-bold block mb-1">Text Color</label><input type="color" value={foregroundColor} onChange={e => setForegroundColor(e.target.value)} className="w-full h-9 rounded-lg border" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-[10px] font-bold block">Start Month (1-12)</label><input type="number" min="1" max="12" value={startMonth} onChange={e => setStartMonth(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg" /></div>
+                  <div><label className="text-[10px] font-bold block">End Month (1-12)</label><input type="number" min="1" max="12" value={endMonth} onChange={e => setEndMonth(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg" /></div>
+                </div>
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Seasonal Theme</button>
+              </form>
+            )}
+
+            {/* SCHEDULE FORM */}
+            {activeTab === 'schedules' && (
+              <form onSubmit={handleAddSchedule} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">New Timetable Schedule</h2>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Service Name</label><input type="text" required placeholder="First Sunday Mass" value={schedTitle} onChange={e => setSchedTitle(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Day of Week</label>
+                  <select value={schedDay} onChange={e => setSchedDay(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm">
+                    <option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-[10px] font-bold">Start Time</label><input type="time" required value={schedStart} onChange={e => setSchedStart(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg" /></div>
+                  <div><label className="text-[10px] font-bold">End Time</label><input type="time" required value={schedEnd} onChange={e => setSchedEnd(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg" /></div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Service Type</label>
+                  <select value={schedType} onChange={e => setSchedType(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm">
+                    <option value="Mass">Holy Mass</option><option value="Confession">Confession</option>
+                  </select>
+                </div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Details / Description</label><input type="text" placeholder="Holy Communion & announcements" value={schedDetails} onChange={e => setSchedDetails(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Schedule</button>
+              </form>
+            )}
+
+            {/* READINGS FORM WITH OCR INTEGRATION */}
+            {activeTab === 'readings' && (
+              <form onSubmit={handleAddReading} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">Daily Liturgical Scriptures</h2>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Date</label><input type="date" required value={readDate} onChange={e => setReadDate(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                
+                {/* Fallback OCR Section */}
+                <div className="bg-muted/40 p-3 rounded-xl border border-border space-y-2">
+                  <label className="text-[10px] font-bold text-accent uppercase tracking-wider block">Scripture OCR Text Extractor</label>
+                  {ocrImageUrl ? (
+                    <div className="space-y-2">
+                      <div className="relative aspect-video rounded border overflow-hidden bg-black/10"><img src={ocrImageUrl} className="object-cover w-full h-full" /></div>
+                      <button type="button" onClick={runOcrExtractor} disabled={ocrLoading} className="w-full py-2 bg-accent text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1">
+                        {ocrLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : null}
+                        <span>Extract & Auto-Fill Swahili</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <CloudinaryUploadWidget onUploadSuccess={setOcrImageUrl} buttonText="Upload Reading screenshot" className="w-full bg-accent hover:bg-emerald-600 text-xs py-2" />
+                  )}
+                </div>
+
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Verse Title</label><input type="text" required placeholder="e.g. John 3:16-18" value={readEngVerse} onChange={e => setReadEngVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Reading Content</label><textarea rows={3} required placeholder="Full scripture text..." value={readEngText} onChange={e => setReadEngText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Verse Title</label><input type="text" required placeholder="e.g. Yohana 3:16-18" value={readSwaVerse} onChange={e => setReadSwaVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Reading Content</label><textarea rows={3} required placeholder="Maandiko ya Kiswahili..." value={readSwaText} onChange={e => setReadSwaText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Readings</button>
+              </form>
+            )}
+
+            {/* JUMUIYA FORM */}
+            {activeTab === 'jumuiyas' && (
+              <form onSubmit={handleAddJumuiya} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">New Jumuiya</h2>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Jumuiya Name</label><input type="text" required placeholder="Mtakatifu Yuda Tadeo" value={jName} onChange={e => setJName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Zone</label><input type="text" required placeholder="Kabianga Central" value={jZone} onChange={e => setJZone(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leader Name</label><input type="text" required placeholder="Peter Mutai" value={jLeader} onChange={e => setJLeader(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leader Phone</label><input type="text" required placeholder="0704285127" value={jPhone} onChange={e => setJPhone(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Day & Time</label><input type="text" required placeholder="Thursdays at 5:00 PM" value={jDay} onChange={e => setJDay(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Venue</label><input type="text" placeholder="Rotational (Member Homes)" value={jLocation} onChange={e => setJLocation(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl font-sans">Save Jumuiya</button>
+              </form>
+            )}
+
+            {/* SOCIETIES HUB EDIT FORM */}
+            {activeTab === 'societies' && (
+              <form onSubmit={handleUpdateSociety} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">Update Society Settings</h2>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Select Society</label>
+                  <select value={socSelectCode} onChange={e => {
+                    const soc = societies.find(s => s.code === e.target.value);
+                    if (soc) loadSocietyForEdit(soc);
+                  }} className="w-full px-3 py-2 border rounded-xl bg-background text-sm font-bold">
+                    {societies.map(s => <option key={s.id} value={s.code}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Description</label><textarea rows={3} required value={socDesc} onChange={e => setSocDesc(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leadership Details</label><textarea rows={2} required placeholder="Chairperson: Jane..." value={socLeader} onChange={e => setSocLeader(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Pattern</label><input type="text" required value={socPattern} onChange={e => setSocPattern(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Society Announcement</label><textarea rows={3} placeholder="Latest updates..." value={socAnnounce} onChange={e => setSocAnnounce(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Changes</button>
+              </form>
+            )}
+
+            {/* GIVING PROJECT FORM */}
+            {activeTab === 'giving' && (
+              <form onSubmit={handleAddGiving} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">New Development Project</h2>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Project Title</label><input type="text" required placeholder="Sanctuary Floor Tiling" value={gpTitle} onChange={e => setGpTitle(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Description</label><textarea rows={3} required placeholder="Project details" value={gpDesc} onChange={e => setGpDesc(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-[10px] font-bold">Target Contribution</label><input type="number" required placeholder="1200000" value={gpTarget} onChange={e => setGpTarget(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg text-xs" /></div>
+                  <div><label className="text-[10px] font-bold">Current Amount Raised</label><input type="number" value={gpCurrent} onChange={e => setGpCurrent(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg text-xs" /></div>
+                </div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Custom Paybill Account Name</label><input type="text" placeholder="e.g. TILING" value={gpPaybillAcc} onChange={e => setGpPaybillAcc(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Project</button>
+              </form>
+            )}
+
+            {/* BULLETINS UPLOADER */}
+            {activeTab === 'bulletins' && (
+              <form onSubmit={handleAddBulletin} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">Upload Parish Bulletin</h2>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Upload Document (PDF)</label>
+                  {bullUrl ? (
+                    <p className="text-emerald-500 text-xs font-bold">PDF Upload successful!</p>
+                  ) : (
+                    <CloudinaryUploadWidget onUploadSuccess={setBullUrl} buttonText="Select PDF Bulletin File" />
+                  )}
+                </div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Bulletin Title</label><input type="text" required placeholder="Bulletin - June 22nd" value={bullTitle} onChange={e => setBullTitle(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Publish Date</label><input type="date" value={bullDate} onChange={e => setBullDate(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <button type="submit" disabled={!bullUrl} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50">Publish Bulletin</button>
+              </form>
+            )}
+
+            {/* SERMON ARCHIVE FORM */}
+            {activeTab === 'sermons' && (
+              <form onSubmit={handleAddSermon} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">Archive Reflection Homily</h2>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Homily Title</label><input type="text" required placeholder="The Prodigal Son" value={sermTitle} onChange={e => setSermTitle(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Preacher</label><input type="text" required placeholder="Fr. Joseph" value={sermPreacher} onChange={e => setSermPreacher(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Scripture Reference</label><input type="text" placeholder="Luke 15:11-32" value={sermVerse} onChange={e => setSermVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Reflection Summary</label><textarea rows={3} required value={sermSummary} onChange={e => setSermSummary(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Audio Recording (Optional Mp3)</label>
+                  {sermAudioUrl ? (
+                    <p className="text-emerald-500 text-xs font-bold">Audio upload successful!</p>
+                  ) : (
+                    <CloudinaryUploadWidget onUploadSuccess={setSermAudioUrl} buttonText="Upload Mp3 File" />
+                  )}
+                </div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Date</label><input type="date" value={sermDate} onChange={e => setSermDate(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Homily</button>
+              </form>
+            )}
+
+            {/* BOOKINGS INFO */}
+            {activeTab === 'bookings' && (
+              <div className="bg-muted/40 p-4 rounded-xl space-y-2 border">
+                <h3 className="font-extrabold text-sm text-foreground">Equipment Bookings Management</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Review and moderate physical parish assets reservations. Approve or reject request entries using the panels on the right side.
+                </p>
+              </div>
+            )}
+
+            {/* REGISTRATIONS INFO */}
+            {activeTab === 'registrations' && (
+              <div className="bg-muted/40 p-4 rounded-xl space-y-2 border">
+                <h3 className="font-extrabold text-sm text-foreground">Sacramental Requests Management</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Private applicant list for sacraments. Manage states (pending, approved) using the panels on the right side.
+                </p>
+              </div>
+            )}
+
+            {/* PRAYER MODERATION INFO */}
+            {activeTab === 'prayers' && (
+              <div className="bg-muted/40 p-4 rounded-xl space-y-2 border">
+                <h3 className="font-extrabold text-sm text-foreground">Prayer Intention Moderation</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Parishioners submit prayers. Approve requests to post them publicly on the dynamic live wall screen.
+                </p>
+              </div>
+            )}
+
           </div>
 
-          {/* Loader or Empty display */}
-          {!dataLoading && (activeTab === 'carousel' ? slides.length : activeTab === 'history' ? historyEntries.length : galleryImages.length) === 0 ? (
-            <div className="text-center py-16 bg-card border border-border rounded-2xl">
-              <p className="text-sm text-muted-foreground">No entries found. Add your first entry using the form on the left.</p>
+          {/* Data List (Right Columns) */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex justify-between items-center border-b pb-2">
+              <h2 className="text-base font-extrabold text-foreground">Existing Listings</h2>
+              {dataLoading && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              {/* Slides List */}
-              {activeTab === 'carousel' && slides.map((slide) => (
-                <div key={slide.id} className="bg-card border border-border rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
-                  <div className="relative aspect-video">
-                    <img src={slide.image_url} alt={slide.title} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
-                    <div>
-                      <h4 className="font-bold text-sm text-foreground truncate">{slide.title}</h4>
-                      {slide.quote && (
-                        <p className="text-xs text-muted-foreground italic line-clamp-2 mt-1">
-                          {slide.quote}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleDelete('carousel_slides', slide.id)}
-                      className="touch-target py-2 px-3 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg hover:bg-destructive/15 transition-all flex items-center justify-center space-x-1"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Remove Slide</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
 
-              {/* History Entries List */}
-              {activeTab === 'history' && historyEntries.map((entry) => (
-                <div key={entry.id} className="bg-card border border-border rounded-xl p-4 flex flex-col justify-between space-y-4 shadow-sm">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">
-                        {entry.year}
-                      </span>
+            {/* CAROUSEL LIST */}
+            {activeTab === 'carousel' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {slides.map(slide => (
+                  <div key={slide.id} className="bg-card border rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                    <img src={slide.image_url} className="aspect-video object-cover" />
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                      <div><h4 className="font-extrabold text-sm">{slide.title}</h4><p className="text-xs text-muted-foreground italic truncate">{slide.quote}</p></div>
+                      <button onClick={() => handleDelete('carousel_slides', slide.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Remove Slide</button>
                     </div>
-                    <h4 className="font-bold text-sm text-foreground">{entry.title}</h4>
-                    <p className="text-xs text-muted-foreground line-clamp-3">{entry.content}</p>
-                    {entry.image_url && (
-                      <div className="relative rounded overflow-hidden aspect-video border border-border/50">
-                        <img src={entry.image_url} alt={entry.title} className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* HISTORY LIST */}
+            {activeTab === 'history' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {historyEntries.map(entry => (
+                  <div key={entry.id} className="bg-card border p-4 rounded-xl flex flex-col justify-between space-y-3 shadow-sm">
+                    <div>
+                      <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">{entry.year}</span>
+                      <h4 className="font-extrabold text-sm mt-1">{entry.title}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-3 mt-1">{entry.content}</p>
+                    </div>
+                    <button onClick={() => handleDelete('history_entries', entry.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Milestone</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* GALLERY LIST */}
+            {activeTab === 'gallery' && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {galleryImages.map(img => (
+                  <div key={img.id} className="bg-card border rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                    <img src={img.image_url} className="aspect-square object-cover" />
+                    <div className="p-3 space-y-2">
+                      <span className="text-[10px] bg-accent/15 text-accent px-2 py-0.5 rounded-full block w-fit font-bold">{img.category}</span>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{img.caption || 'No caption'}</p>
+                      <button onClick={() => handleDelete('gallery_images', img.id)} className="w-full py-1 bg-destructive/10 text-destructive text-[10px] font-bold rounded">Delete</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* THEME LIST */}
+            {activeTab === 'theme' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {themes.map(t => (
+                  <div key={t.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                      <h4 className="font-extrabold text-sm">{t.name}</h4>
+                      <div className="flex gap-2 mt-2">
+                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.primary_color }} title="Primary" />
+                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.secondary_color }} title="Hover" />
+                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.background_color }} title="Background" />
+                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.foreground_color }} title="Text" />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">Months: {t.start_month} to {t.end_month}</p>
+                    </div>
+                    <button onClick={() => handleDelete('theme_settings', t.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Remove Theme</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* SCHEDULES LIST */}
+            {activeTab === 'schedules' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {schedules.map(s => (
+                  <div key={s.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                      <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded uppercase">
+                        {s.type}
+                      </span>
+                      <h4 className="font-extrabold text-sm mt-1">{s.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Time: {s.start_time} - {s.end_time} • Day: {s.day_of_week === 0 ? 'Sunday' : s.day_of_week === 6 ? 'Saturday' : 'Weekday'}
+                      </p>
+                      {s.details && <p className="text-[10px] text-muted-foreground italic mt-0.5">{s.details}</p>}
+                    </div>
+                    <button onClick={() => handleDelete('service_schedules', s.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Schedule</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* READINGS LIST */}
+            {activeTab === 'readings' && (
+              <div className="space-y-3">
+                {readings.map(r => (
+                  <div key={r.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                    <div>
+                      <h4 className="font-extrabold text-sm text-foreground">{r.date}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">Eng: {r.english_verse} • Swa: {r.swahili_verse}</p>
+                    </div>
+                    <button onClick={() => handleDelete('daily_readings', r.id)} className="px-3 py-1.5 bg-destructive/10 text-destructive text-xs font-bold rounded-lg shrink-0">Delete</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* JUMUIYA LIST */}
+            {activeTab === 'jumuiyas' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {jumuiyas.map(j => (
+                  <div key={j.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                      <h4 className="font-extrabold text-sm">{j.name} ({j.zone})</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Leader: {j.leader_name} ({j.leader_phone})</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Meets: {j.meeting_day} @ {j.meeting_location || 'N/A'}</p>
+                    </div>
+                    <button onClick={() => handleDelete('jumuiyas', j.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Jumuiya</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* SOCIETIES HUB DIRECTORY VIEW */}
+            {activeTab === 'societies' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {societies.map(s => (
+                  <button key={s.id} onClick={() => loadSocietyForEdit(s)} className={`text-left bg-card border p-4 rounded-xl shadow-sm hover:border-primary/40 transition-all flex flex-col justify-between space-y-2 ${socSelectCode === s.code ? 'border-primary shadow-md bg-primary/5' : ''}`}>
+                    <div>
+                      <h4 className="font-extrabold text-sm">{s.name}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{s.description}</p>
+                    </div>
+                    <span className="text-[10px] text-primary font-bold">Tap to edit details →</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* PRAYERS LIST MODERATION WALL */}
+            {activeTab === 'prayers' && (
+              <div className="space-y-3">
+                {prayers.map(p => (
+                  <div key={p.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2 text-[10px] font-bold text-muted-foreground">
+                        <span>Requester: {p.name}</span>
+                        <span>•</span>
+                        <span>{new Date(p.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-xs text-foreground/90 font-sans">{p.intention}</p>
+                      <span className="text-[9px] font-bold text-accent">Status: {p.is_moderated ? 'Public Wall' : 'Pending Review'}</span>
+                    </div>
+                    <div className="flex sm:flex-col items-center gap-2 shrink-0 justify-end">
+                      {!p.is_moderated && (
+                        <button onClick={() => handleModeratePrayer(p.id, true)} className="p-1.5 bg-emerald-500/10 text-emerald-600 rounded-lg hover:bg-emerald-500/20" title="Approve"><Check className="w-4 h-4" /></button>
+                      )}
+                      <button onClick={() => handleModeratePrayer(p.id, false)} className="p-1.5 bg-destructive/10 text-destructive rounded-lg hover:bg-destructive/20" title="Delete"><X className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* GIVING PROJECTS LIST */}
+            {activeTab === 'giving' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {givingProjects.map(gp => (
+                  <div key={gp.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                      <h4 className="font-extrabold text-sm">{gp.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{gp.description}</p>
+                      <div className="flex justify-between items-center text-[10px] font-bold mt-2 text-primary border-t pt-2">
+                        <span>Raised: KSh {gp.current_amount}</span>
+                        <span>Target: KSh {gp.target_amount}</span>
+                      </div>
+                    </div>
+                    <button onClick={() => handleDelete('giving_projects', gp.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Project</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* BULLETINS LIST */}
+            {activeTab === 'bulletins' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {bulletins.map(b => (
+                  <div key={b.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                      <h4 className="font-extrabold text-sm">{b.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Date: {b.publish_date}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <a href={b.file_url} target="_blank" rel="noopener noreferrer" className="flex-1 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg text-center">View File</a>
+                      <button onClick={() => handleDelete('bulletin_archives', b.id)} className="px-2.5 bg-destructive/10 text-destructive rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* SERMONS LIST */}
+            {activeTab === 'sermons' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {sermons.map(s => (
+                  <div key={s.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                      <h4 className="font-extrabold text-sm leading-snug">{s.title}</h4>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Preacher: {s.preacher} • Scripture: {s.scripture_reference || 'N/A'}</p>
+                      <p className="text-xs text-foreground/80 line-clamp-2 mt-1">{s.summary}</p>
+                    </div>
+                    <button onClick={() => handleDelete('sermons', s.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Sermon</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* BOOKINGS LIST MODERATION */}
+            {activeTab === 'bookings' && (
+              <div className="space-y-3">
+                {bookings.map(b => (
+                  <div key={b.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className="font-extrabold text-sm leading-tight text-foreground">{b.asset_name}</h4>
+                        <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${b.status === 'approved' ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' : b.status === 'rejected' ? 'text-destructive bg-destructive/10 border-destructive/20' : 'text-amber-600 bg-amber-500/10 border-amber-500/20'}`}>{b.status}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Borrower: {b.borrower_name} ({b.borrower_phone})</p>
+                      <p className="text-[10px] text-muted-foreground font-semibold">Duration: {b.start_date} to {b.end_date}</p>
+                    </div>
+                    {b.status === 'pending' && (
+                      <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        <button onClick={() => handleUpdateBooking(b.id, 'approved')} className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-600">Approve</button>
+                        <button onClick={() => handleUpdateBooking(b.id, 'rejected')} className="px-3 py-1.5 bg-destructive text-white text-xs font-bold rounded-lg hover:bg-destructive-hover">Reject</button>
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleDelete('history_entries', entry.id)}
-                    className="touch-target py-2 px-3 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg hover:bg-destructive/15 transition-all flex items-center justify-center space-x-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete Milestone</span>
-                  </button>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
 
-              {/* Gallery Images List */}
-              {activeTab === 'gallery' && galleryImages.map((img) => (
-                <div key={img.id} className="bg-card border border-border rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
-                  <div className="relative aspect-square">
-                    <img src={img.image_url} alt="Gallery item" className="w-full h-full object-cover" />
-                    <span className="absolute top-2 left-2 text-[10px] font-bold text-white bg-accent px-2 py-0.5 rounded">
-                      {img.category}
-                    </span>
+            {/* REGISTRATIONS LIST MANAGER */}
+            {activeTab === 'registrations' && (
+              <div className="space-y-3">
+                {registrations.map(reg => (
+                  <div key={reg.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-start gap-2">
+                        <h4 className="font-extrabold text-sm leading-tight text-primary">{reg.sacrament_type} Application</h4>
+                        <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${reg.status === 'approved' ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20' : 'text-amber-600 bg-amber-500/10 border-amber-500/20'}`}>{reg.status}</span>
+                      </div>
+                      <p className="text-xs font-extrabold text-foreground mt-1">Candidate: {reg.applicant_name}</p>
+                      <p className="text-xs text-muted-foreground">Phone: {reg.phone_number}</p>
+                      {reg.parent_names && <p className="text-[10px] text-muted-foreground">Parents: {reg.parent_names}</p>}
+                      {reg.date_of_birth && <p className="text-[10px] text-muted-foreground">DOB: {reg.date_of_birth}</p>}
+                      {reg.details && Object.keys(reg.details).length > 0 && (
+                        <div className="text-[10px] text-muted-foreground bg-muted p-2 rounded mt-2 border">
+                          <strong>Details:</strong>
+                          <pre className="whitespace-pre-wrap font-sans mt-0.5 text-[9px]">{JSON.stringify(reg.details, null, 2)}</pre>
+                        </div>
+                      )}
+                    </div>
+                    {reg.status === 'pending' && (
+                      <button onClick={() => handleUpdateRegStatus(reg.id, 'approved')} className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded-lg self-end sm:self-center shrink-0">Approve Request</button>
+                    )}
                   </div>
-                  <div className="p-4 flex flex-col justify-between space-y-3">
-                    <p className="text-xs text-foreground/80 line-clamp-2 min-h-[2rem]">
-                      {img.caption || 'No caption'}
-                    </p>
-                    <button
-                      onClick={() => handleDelete('gallery_images', img.id)}
-                      className="touch-target py-2 px-3 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg hover:bg-destructive/15 transition-all flex items-center justify-center space-x-1 w-full"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete Photo</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
 
-            </div>
-          )}
+          </div>
+
         </div>
-
       </div>
     </div>
   );
