@@ -6,8 +6,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes = [
     '',
     '/readings',
+    '/centers',
     '/jumuiyas',
     '/societies',
+    '/projects',
+    '/prayer-wall',
     '/history',
     '/gallery',
     '/booking',
