@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+
 import { BookOpen, Calendar, ChevronLeft, ChevronRight, Loader2, Globe, FileText } from 'lucide-react';
 
 export default function DailyReadings() {
@@ -22,16 +22,19 @@ export default function DailyReadings() {
   const fetchReading = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('daily_readings')
-        .select('*')
-        .eq('date', selectedDate)
-        .maybeSingle();
-
-      if (error) throw error;
-      setReading(data || null);
+      const response = await fetch(`/api/readings?date=${selectedDate}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load readings: ${response.statusText}`);
+      }
+      const resJson = await response.json();
+      if (resJson.success && resJson.data) {
+        setReading(resJson.data);
+      } else {
+        setReading(null);
+      }
     } catch (err: any) {
-      console.error('Error fetching readings:', err.message);
+      console.error('Error fetching readings:', err.message || err);
+      setReading(null);
     } finally {
       setLoading(false);
     }
