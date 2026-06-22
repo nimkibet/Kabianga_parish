@@ -35,7 +35,7 @@ export default function Home() {
           Welcome to our Community
         </span>
         <h2 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight">
-          ACK Kabianga Parish
+          Parish Kabianga
         </h2>
         <p className="text-base sm:text-lg text-foreground/80 leading-relaxed">
           We are a thriving community of faith nestled in the beautiful hills of Kabianga. 
@@ -104,7 +104,7 @@ export default function Home() {
             </div>
             <h3 className="text-xl font-bold text-foreground">Our Church History</h3>
             <p className="text-sm text-foreground/75 leading-relaxed">
-              Discover the rich heritage of ACK Kabianga Parish. Trace our humble beginnings, 
+              Discover the rich heritage of Parish Kabianga. Trace our humble beginnings, 
               from early missionary works in Kabianga, to our growth as a parish leading community 
               development and spiritual nourishment.
             </p>
@@ -152,8 +152,8 @@ export default function Home() {
             <div className="flex items-start space-x-3">
               <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-foreground">ACK Kabianga Parish</p>
-                <p>Located near Kabianga University</p>
+                <p className="font-bold text-foreground">Parish Kabianga</p>
+                <p>Located near Kabianga University, under Kericho Diocese</p>
                 <p>P.O. Box 22 - 20200, Kericho, Kenya</p>
               </div>
             </div>
@@ -173,7 +173,8 @@ export default function Home() {
               Our parish clergy are always available to stand with you. Reach out through our office email or telephone.
             </p>
             <p className="text-sm font-bold text-primary pt-1">
-              Email: info@ackkabiangaparish.or.ke
+              Email: parishkabianga@gmail.com
+              Phone: 0704285127
             </p>
           </div>
         </div>
