@@ -76,3 +76,30 @@ FOR ALL
 TO authenticated 
 USING (true) 
 WITH CHECK (true);
+
+-- Theme Settings Table and RLS policies for Kabianga Parish
+CREATE TABLE IF NOT EXISTS public.theme_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,                -- e.g., "Easter", "Christmas"
+    primary_color TEXT NOT NULL,       -- hex color string
+    secondary_color TEXT NOT NULL,
+    background_color TEXT NOT NULL,
+    foreground_color TEXT NOT NULL,
+    start_month INT NOT NULL,          -- 1-12 inclusive
+    end_month INT NOT NULL,            -- 1-12 inclusive
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- RLS Policies for theme_settings
+CREATE POLICY "Allow public read access for theme_settings"
+    ON public.theme_settings
+    FOR SELECT
+    TO public
+    USING (true);
+
+CREATE POLICY "Allow admin write access for theme_settings"
+    ON public.theme_settings
+    FOR ALL
+    TO authenticated
+    USING (true)
+    WITH CHECK (true);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ThemeProvider from '@/components/ThemeProvider';
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full scroll-smooth">
       <body className="min-h-full flex flex-col bg-background text-foreground pb-20 md:pb-0">
-        <Navbar />
+        <ThemeProvider>
+          <Navbar />
+        </ThemeProvider>
         <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mb-4 md:mb-12">
           {children}
         </main>

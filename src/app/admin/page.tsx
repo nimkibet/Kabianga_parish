@@ -57,6 +57,14 @@ export default function AdminPage() {
   const [galleryCustomCategory, setGalleryCustomCategory] = useState('');
   const [galleryCaption, setGalleryCaption] = useState('');
   const [galleryImageUrl, setGalleryImageUrl] = useState('');
+  // Theme Settings state
+  const [themeName, setThemeName] = useState('');
+  const [primaryColor, setPrimaryColor] = useState('#7c3aed');
+  const [secondaryColor, setSecondaryColor] = useState('#a78bfa');
+  const [backgroundColor, setBackgroundColor] = useState('#faf5ff');
+  const [foregroundColor, setForegroundColor] = useState('#1e1b4b');
+  const [startMonth, setStartMonth] = useState('1');
+  const [endMonth, setEndMonth] = useState('12');
 
   // Track session
   useEffect(() => {
@@ -219,6 +227,34 @@ export default function AdminPage() {
       fetchData();
     } catch (err: any) {
       showNotification('error', `Failed to save gallery item: ${err.message}`);
+    }
+  };
+
+  // Theme Settings Submit
+  const handleAddTheme = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.from('theme_settings').insert({
+        name: themeName,
+        primary_color: primaryColor,
+        secondary_color: secondaryColor,
+        background_color: backgroundColor,
+        foreground_color: foregroundColor,
+        start_month: parseInt(startMonth),
+        end_month: parseInt(endMonth),
+      });
+      if (error) throw error;
+      showNotification('success', 'Theme added successfully!');
+      // reset fields
+      setThemeName('');
+      setPrimaryColor('#7c3aed');
+      setSecondaryColor('#a78bfa');
+      setBackgroundColor('#faf5ff');
+      setForegroundColor('#1e1b4b');
+      setStartMonth('1');
+      setEndMonth('12');
+    } catch (err: any) {
+      showNotification('error', `Failed to save theme: ${err.message}`);
     }
   };
 
@@ -403,6 +439,17 @@ export default function AdminPage() {
         >
           <GalleryIcon className="w-4 h-4" />
           <span>Photo Gallery</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('theme')}
+          className={`touch-target px-5 py-3 border-b-2 font-bold text-xs whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+            activeTab === 'theme'
+              ? 'border-primary text-primary bg-primary/5'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Sliders className="w-4 h-4" />
+          <span>Theme Settings</span>
         </button>
       </div>
 
@@ -673,6 +720,59 @@ export default function AdminPage() {
               </button>
             </form>
           )}
+
+          {activeTab === 'theme' && (
+              <form onSubmit={handleAddTheme} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b border-border pb-2">
+                  Theme Settings
+                </h2>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Theme Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g., Easter"
+                    value={themeName}
+                    onChange={(e) => setThemeName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Primary Color</label>
+                    <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-full h-10 rounded-xl border border-border" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Secondary Color</label>
+                    <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="w-full h-10 rounded-xl border border-border" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Background Color</label>
+                    <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} className="w-full h-10 rounded-xl border border-border" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Foreground Color</label>
+                    <input type="color" value={foregroundColor} onChange={(e) => setForegroundColor(e.target.value)} className="w-full h-10 rounded-xl border border-border" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Start Month (1-12)</label>
+                    <input type="number" min="1" max="12" value={startMonth} onChange={(e) => setStartMonth(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-border" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">End Month (1-12)</label>
+                    <input type="number" min="1" max="12" value={endMonth} onChange={(e) => setEndMonth(e.target.value)} className="w-full px-3 py-2 rounded-xl border border-border" />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="w-full touch-target bg-primary text-white text-xs font-bold py-2.5 rounded-xl shadow-md hover:bg-primary-hover active:scale-95 transition-all flex items-center justify-center"
+                >
+                  Save Theme
+                </button>
+              </form>
+            )}
 
         </div>
 
