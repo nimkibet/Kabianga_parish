@@ -31,7 +31,7 @@ export default function AdminPage() {
   const [authError, setAuthError] = useState('');
 
   // Dashboard state
-  const [activeTab, setActiveTab] = useState<'carousel' | 'history' | 'gallery'>('carousel');
+  const [activeTab, setActiveTab] = useState<'carousel' | 'history' | 'gallery' | 'theme'>('carousel');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Data states
