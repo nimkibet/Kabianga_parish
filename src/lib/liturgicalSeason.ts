@@ -16,38 +16,38 @@ export interface LiturgicalTheme {
 export const LITURGICAL_THEMES: Record<string, LiturgicalTheme> = {
   ADVENT: {
     name: 'Advent (Purple)',
-    primary: '#7c3aed',      // Purple
-    primaryHover: '#6d28d9',
-    background: '#f3e8ff',   // Tinted light purple
-    foreground: '#1e1b4b',
+    primary: '#a78bfa',      // Light Purple
+    primaryHover: '#8b5cf6',
+    background: '#120c1f',   // Rich Dark Purple
+    foreground: '#f3e8ff',   // Light Lavender
   },
   CHRISTMAS: {
     name: 'Christmas (White/Gold)',
-    primary: '#d97706',      // Gold / Amber
-    primaryHover: '#b45309',
-    background: '#fffbeb',   // Tinted warm gold/amber
-    foreground: '#451a03',
+    primary: '#fbbf24',      // Gold
+    primaryHover: '#f59e0b',
+    background: '#120c1f',   // Rich Dark Purple
+    foreground: '#f3e8ff',
   },
   LENT: {
     name: 'Lent (Purple)',
-    primary: '#6b21a8',      // Deep Purple
-    primaryHover: '#581c87',
-    background: '#f3e8ff',   // Tinted light purple
-    foreground: '#1e1b4b',
+    primary: '#a78bfa',      // Light Purple
+    primaryHover: '#8b5cf6',
+    background: '#120c1f',   // Rich Dark Purple
+    foreground: '#f3e8ff',
   },
   EASTER: {
     name: 'Easter (White/Gold)',
-    primary: '#d4af37',      // Metallic Gold
-    primaryHover: '#c5a028',
-    background: '#fffbeb',   // Tinted warm gold
-    foreground: '#3c2a00',
+    primary: '#fbbf24',      // Gold
+    primaryHover: '#f59e0b',
+    background: '#120c1f',   // Rich Dark Purple
+    foreground: '#f3e8ff',
   },
   ORDINARY: {
     name: 'Ordinary Time (Green)',
-    primary: '#16a34a',      // Green
-    primaryHover: '#15803d',
-    background: '#e8f5e9',   // Tinted light green
-    foreground: '#14532d',
+    primary: '#a78bfa',      // Light Purple
+    primaryHover: '#8b5cf6',
+    background: '#120c1f',   // Rich Dark Purple
+    foreground: '#f3e8ff',
   },
 };
 

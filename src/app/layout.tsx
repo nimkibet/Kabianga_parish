@@ -79,8 +79,8 @@ export default function RootLayout({
       --color-foreground: ${theme.foreground} !important;
       --background: ${theme.background} !important;
       --foreground: ${theme.foreground} !important;
-      --card: ${theme.background} !important;
-      --color-card: ${theme.background} !important;
+      --card: ${theme.background === '#120c1f' ? '#1d1230' : theme.background} !important;
+      --color-card: ${theme.background === '#120c1f' ? '#1d1230' : theme.background} !important;
       --card-foreground: ${theme.foreground} !important;
       --color-card-foreground: ${theme.foreground} !important;
       --border: ${theme.primaryHover}20 !important;

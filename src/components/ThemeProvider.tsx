@@ -83,8 +83,8 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
             '--background': active.background_color,
             '--foreground': active.foreground_color,
             // Ensure card and borders also follow the active theme to avoid white overrides
-            '--card': active.background_color,
-            '--color-card': active.background_color,
+            '--card': active.background_color === '#120c1f' ? '#1d1230' : active.background_color,
+            '--color-card': active.background_color === '#120c1f' ? '#1d1230' : active.background_color,
             '--card-foreground': active.foreground_color,
             '--color-card-foreground': active.foreground_color,
             '--border': active.secondary_color + '20', // subtle transparent primary
@@ -109,8 +109,8 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       '--background': theme.background,
       '--foreground': theme.foreground,
       // Cascade to card variables to prevent default white cards
-      '--card': theme.background,
-      '--color-card': theme.background,
+      '--card': theme.background === '#120c1f' ? '#1d1230' : theme.background,
+      '--color-card': theme.background === '#120c1f' ? '#1d1230' : theme.background,
       '--card-foreground': theme.foreground,
       '--color-card-foreground': theme.foreground,
       '--border': theme.primaryHover + '20',
