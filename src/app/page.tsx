@@ -24,6 +24,34 @@ export default function Home() {
   const [upcomingService, setUpcomingService] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
 
+  // Dynamic Site Settings States
+  const [brandingName, setBrandingName] = useState('Kabianga Catholic Parish');
+  const [welcomeText, setWelcomeText] = useState('We are a thriving community of faith nestled in the beautiful hills of Kabianga. Our mission is to worship God, grow in spiritual maturity, and share Christ’s love through service and fellowship. Whether you are visiting or looking for a church home, you are warmly welcome!');
+  const [contactEmail, setContactEmail] = useState('parishkabianga@gmail.com');
+  const [contactPhone, setContactPhone] = useState('0704285127');
+  const [contactAddress, setContactAddress] = useState('P.O. Box 22 - 20200, Kericho, Kenya');
+  const [officeHours, setOfficeHours] = useState('Tuesday - Friday: 9:00 AM - 4:00 PM | Saturday: Closed');
+
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const { data } = await supabase.from('site_settings').select('*');
+        if (data && data.length > 0) {
+          const settingsMap = new Map(data.map(item => [item.key, item.value]));
+          if (settingsMap.has('branding_name')) setBrandingName(settingsMap.get('branding_name')!);
+          if (settingsMap.has('welcome_text')) setWelcomeText(settingsMap.get('welcome_text')!);
+          if (settingsMap.has('contact_email')) setContactEmail(settingsMap.get('contact_email')!);
+          if (settingsMap.has('contact_phone')) setContactPhone(settingsMap.get('contact_phone')!);
+          if (settingsMap.has('contact_address')) setContactAddress(settingsMap.get('contact_address')!);
+          if (settingsMap.has('office_hours')) setOfficeHours(settingsMap.get('office_hours')!);
+        }
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+      }
+    }
+    fetchSettings();
+  }, []);
+
   useEffect(() => {
     fetchSchedules();
   }, []);
@@ -165,13 +193,10 @@ export default function Home() {
           Welcome to our Community
         </span>
         <h2 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight">
-          Parish Kabianga
+          {brandingName}
         </h2>
-        <p className="text-base sm:text-lg text-foreground/80 leading-relaxed">
-          We are a thriving community of faith nestled in the beautiful hills of Kabianga. 
-          Our mission is to worship God, grow in spiritual maturity, and share Christ’s love 
-          through service and fellowship. Whether you are visiting or looking for a church home, 
-          you are warmly welcome!
+        <p className="text-base sm:text-lg text-foreground/80 leading-relaxed whitespace-pre-line">
+          {welcomeText}
         </p>
         <div className="flex flex-wrap justify-center gap-3 pt-2">
           <a
@@ -332,17 +357,16 @@ export default function Home() {
             <div className="flex items-start space-x-3">
               <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-foreground">Parish Kabianga</p>
+                <p className="font-bold text-foreground">{brandingName}</p>
                 <p>Located near Kabianga University, under Kericho Diocese</p>
-                <p>P.O. Box 22 - 20200, Kericho, Kenya</p>
+                <p>{contactAddress}</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <Clock className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold text-foreground">Office Hours</p>
-                <p>Tuesday - Friday: 9:00 AM - 4:00 PM</p>
-                <p>Saturday: Closed (By Appointment)</p>
+                <p className="whitespace-pre-line">{officeHours}</p>
               </div>
             </div>
           </div>
@@ -352,10 +376,10 @@ export default function Home() {
             <p className="text-xs text-muted-foreground">
               Our parish clergy are always available to stand with you. Reach out through our office email or telephone.
             </p>
-            <p className="text-sm font-bold text-primary pt-1">
-              Email: parishkabianga@gmail.com
-              Phone: 0704285127
-            </p>
+            <div className="text-sm font-bold text-primary pt-1 space-y-1">
+              <p>Email: {contactEmail}</p>
+              <p>Phone: {contactPhone}</p>
+            </div>
           </div>
         </div>
       </section>

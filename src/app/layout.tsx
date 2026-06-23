@@ -6,16 +6,17 @@ import { getLiturgicalSeason } from '@/lib/liturgicalSeason';
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Kabianga Parish",
-    default: "Kabianga Parish - Welcome to Our Church Community",
+    template: "%s | Kabianga Catholic Parish",
+    default: "Kabianga Catholic Parish - Welcome to Our Church Community",
   },
   verification: {
     google: "FGFcghGjaq4hXdgLmVup6F6WKz40EieegAoGv-ezzzg",
   },
-  description: "Welcome to Kabianga Parish, a vibrant Catholic community under the Kericho Diocese. Join us for Sunday Mass services, confessions, fellowship, and community outreach in Kabianga.",
+  description: "Welcome to Kabianga Catholic Parish, a vibrant Catholic community under the Kericho Diocese. Join us for Sunday Mass services, confessions, fellowship, and community outreach in Kabianga.",
   keywords: [
     "kabianga",
     "kabianga parish",
+    "kabianga catholic parish",
     "kericho diocese",
     "kericho dioces",
     "parish kabianga",
@@ -35,10 +36,10 @@ export const metadata: Metadata = {
     canonical: "https://kabiangaparish.org",
   },
   openGraph: {
-    title: "Kabianga Parish - Catholic Diocese of Kericho",
-    description: "Welcome to Kabianga Parish, a vibrant Catholic community under the Kericho Diocese. Join us for Sunday Mass, confessions, and community fellowship.",
+    title: "Kabianga Catholic Parish - Catholic Diocese of Kericho",
+    description: "Welcome to Kabianga Catholic Parish, a vibrant Catholic community under the Kericho Diocese. Join us for Sunday Mass, confessions, and community fellowship.",
     url: "https://kabiangaparish.org",
-    siteName: "Kabianga Parish",
+    siteName: "Kabianga Catholic Parish",
     locale: "en_US",
     type: "website",
   },
@@ -63,7 +64,7 @@ export default function RootLayout({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "Kabianga Parish",
+    "name": "Kabianga Catholic Parish",
     "alternateName": ["Catholic Parish of Kabianga", "Kabianga Catholic Church"],
     "url": "https://kabiangaparish.org",
   };
@@ -107,7 +108,7 @@ export default function RootLayout({
           </main>
           <footer className="w-full border-t border-border bg-card py-6 text-center text-xs text-muted-foreground mt-auto hidden md:block">
             <div className="max-w-7xl mx-auto px-4">
-              <p>&copy; {new Date().getFullYear()} Kabianga Parish. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} Kabianga Catholic Parish. All rights reserved.</p>
               <p className="mt-1 font-semibold">Serving God, Transforming Lives in the Diocese of Kericho.</p>
             </div>
           </footer>

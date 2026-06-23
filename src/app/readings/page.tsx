@@ -1,13 +1,44 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
 import { BookOpen, Calendar, ChevronLeft, ChevronRight, Loader2, Globe, FileText } from 'lucide-react';
+import { parseLegacyReading } from '@/lib/readingsParser';
+
+// Color Mapping for Liturgical colors to Tailwind accent classes
+const colorMap: Record<string, { border: string; bg: string; text: string; accentBg: string; name: string }> = {
+  green: {
+    border: 'border-t-emerald-600 dark:border-t-emerald-500',
+    bg: 'bg-emerald-600',
+    text: 'text-emerald-700 dark:text-emerald-400',
+    accentBg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+    name: 'Ordinary Time'
+  },
+  purple: {
+    border: 'border-t-purple-600 dark:border-t-purple-500',
+    bg: 'bg-purple-600',
+    text: 'text-purple-700 dark:text-purple-400',
+    accentBg: 'bg-purple-500/10 text-purple-700 dark:text-purple-300',
+    name: 'Advent / Lent'
+  },
+  red: {
+    border: 'border-t-red-600 dark:border-t-red-500',
+    bg: 'bg-red-600',
+    text: 'text-red-700 dark:text-red-400',
+    accentBg: 'bg-red-500/10 text-red-700 dark:text-red-300',
+    name: 'Feasts of Martyrs / Passion'
+  },
+  white: {
+    border: 'border-t-amber-400 dark:border-t-amber-300',
+    bg: 'bg-amber-400',
+    text: 'text-amber-700 dark:text-amber-400',
+    accentBg: 'bg-amber-500/10 text-amber-800 dark:text-amber-300',
+    name: 'Solemnities / Feasts / Easter / Christmas'
+  }
+};
 
 export default function DailyReadings() {
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
-    // format as YYYY-MM-DD local time
     return today.toISOString().split('T')[0];
   });
   
@@ -15,9 +46,22 @@ export default function DailyReadings() {
   const [reading, setReading] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
+  // Load persisted language from session
+  useEffect(() => {
+    const storedLang = localStorage.getItem('readings_language') as 'english' | 'swahili';
+    if (storedLang === 'english' || storedLang === 'swahili') {
+      setLanguage(storedLang);
+    }
+  }, []);
+
   useEffect(() => {
     fetchReading();
   }, [selectedDate]);
+
+  const handleLanguageChange = (lang: 'english' | 'swahili') => {
+    setLanguage(lang);
+    localStorage.setItem('readings_language', lang);
+  };
 
   const fetchReading = async () => {
     setLoading(true);
@@ -57,8 +101,50 @@ export default function DailyReadings() {
     return new Date(dateStr).toLocaleDateString(undefined, options);
   };
 
+  // Helper to extract structured sections with legacy fallback
+  const getStructuredSections = () => {
+    if (!reading) return null;
+    
+    const isEnglish = language === 'english';
+    const firstReading = isEnglish ? reading.first_reading_en : reading.first_reading_sw;
+    const secondReading = isEnglish ? reading.second_reading_en : reading.second_reading_sw;
+    const psalm = isEnglish ? reading.psalm_en : reading.psalm_sw;
+    const gospel = isEnglish ? reading.gospel_en : reading.gospel_sw;
+    
+    // If structured columns are empty, fall back to parsing legacy string format
+    if (!firstReading && !psalm && !gospel) {
+      const rawText = isEnglish ? reading.english_reading : reading.swahili_reading;
+      const legacy = parseLegacyReading(rawText);
+      return {
+        firstReading: legacy.firstReading,
+        firstReadingVerse: legacy.firstReadingVerse || (isEnglish ? 'First Reading' : 'Somo la Kwanza'),
+        secondReading: legacy.secondReading,
+        secondReadingVerse: legacy.secondReadingVerse || (isEnglish ? 'Second Reading' : 'Somo la Pili'),
+        psalm: legacy.psalm,
+        psalmVerse: legacy.psalmVerse || (isEnglish ? 'Responsorial Psalm' : 'Zaburi ya Kujibu'),
+        gospel: legacy.gospel,
+        gospelVerse: legacy.gospelVerse || (isEnglish ? 'Gospel' : 'Injili')
+      };
+    }
+    
+    return {
+      firstReading: firstReading || '',
+      firstReadingVerse: isEnglish ? 'First Reading' : 'Somo la Kwanza',
+      secondReading: secondReading || '',
+      secondReadingVerse: isEnglish ? 'Second Reading' : 'Somo la Pili',
+      psalm: psalm || '',
+      psalmVerse: isEnglish ? 'Responsorial Psalm' : 'Zaburi ya Kujibu',
+      gospel: gospel || '',
+      gospelVerse: isEnglish ? 'Gospel' : 'Injili'
+    };
+  };
+
+  const sections = getStructuredSections();
+  const currentLiturgicalColor = reading?.liturgical_color || 'green';
+  const colorTheme = colorMap[currentLiturgicalColor] || colorMap.green;
+
   return (
-    <div className="max-w-2xl mx-auto space-y-6 px-1 pb-16">
+    <div className="max-w-3xl mx-auto space-y-6 px-1 pb-16">
       
       {/* Page Header */}
       <div className="text-center space-y-2">
@@ -111,7 +197,7 @@ export default function DailyReadings() {
         {/* Language Switches */}
         <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-xl">
           <button
-            onClick={() => setLanguage('english')}
+            onClick={() => handleLanguageChange('english')}
             className={`touch-target py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
               language === 'english'
                 ? 'bg-card text-primary shadow-sm'
@@ -122,7 +208,7 @@ export default function DailyReadings() {
             <span>English Readings</span>
           </button>
           <button
-            onClick={() => setLanguage('swahili')}
+            onClick={() => handleLanguageChange('swahili')}
             className={`touch-target py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
               language === 'swahili'
                 ? 'bg-card text-primary shadow-sm'
@@ -135,8 +221,8 @@ export default function DailyReadings() {
         </div>
       </div>
 
-      {/* Readings Display Card */}
-      <div className="bg-card border border-border rounded-2xl shadow-sm p-6 sm:p-8 min-h-[300px] flex flex-col justify-between">
+      {/* Readings Display Card with Top Color Border */}
+      <div className={`bg-card border-x border-b border-t-8 ${colorTheme.border} border-border rounded-2xl shadow-md p-6 sm:p-8 min-h-[300px] flex flex-col justify-between transition-all duration-300`}>
         
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center space-y-3 py-20">
@@ -144,22 +230,86 @@ export default function DailyReadings() {
             <p className="text-xs text-muted-foreground font-semibold">Loading scriptures...</p>
           </div>
         ) : reading ? (
-          <div className="space-y-6 animate-fade-in flex-1">
+          <div className="space-y-8 animate-fade-in flex-1">
             
-            {/* Reading Title / Verse header */}
-            <div className="border-b border-border/80 pb-4 space-y-1.5">
-              <span className="inline-block text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded uppercase tracking-wider">
-                {language === 'english' ? 'Daily Verse' : 'Fungu la Siku'}
-              </span>
-              <h2 className="text-2xl font-bold text-foreground tracking-tight">
-                {language === 'english' ? reading.english_verse : reading.swahili_verse}
-              </h2>
+            {/* Reading Title / Verse header & Color indicator */}
+            <div className="border-b border-border/80 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="space-y-1">
+                <span className={`inline-block text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded ${colorTheme.accentBg}`}>
+                  {colorTheme.name}
+                </span>
+                <h2 className="text-2xl font-bold text-foreground tracking-tight">
+                  {language === 'english' ? reading.english_verse : reading.swahili_verse}
+                </h2>
+              </div>
             </div>
 
-            {/* Reading Content */}
-            <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/90 leading-relaxed font-sans text-sm sm:text-base whitespace-pre-line">
-              {language === 'english' ? reading.english_reading : reading.swahili_reading}
-            </div>
+            {/* Reading Content - Structured Sections */}
+            {sections && (
+              <div className="space-y-8 max-w-none text-foreground/90 font-sans text-sm sm:text-base">
+                
+                {/* First Reading */}
+                {sections.firstReading && (
+                  <div className="space-y-3 pl-4 border-l-4 border-primary/20">
+                    <h3 className={`text-base font-extrabold tracking-wide flex items-center justify-between ${colorTheme.text}`}>
+                      <span>{sections.firstReadingVerse}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10`}>
+                        {language === 'english' ? 'First Reading' : 'Somo la Kwanza'}
+                      </span>
+                    </h3>
+                    <p className="text-foreground/80 leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                      {sections.firstReading}
+                    </p>
+                  </div>
+                )}
+
+                {/* Second Reading */}
+                {sections.secondReading && (
+                  <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
+                    <h3 className={`text-base font-extrabold tracking-wide flex items-center justify-between ${colorTheme.text}`}>
+                      <span>{sections.secondReadingVerse}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10`}>
+                        {language === 'english' ? 'Second Reading' : 'Somo la Pili'}
+                      </span>
+                    </h3>
+                    <p className="text-foreground/80 leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                      {sections.secondReading}
+                    </p>
+                  </div>
+                )}
+
+                {/* Responsorial Psalm */}
+                {sections.psalm && (
+                  <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
+                    <h3 className={`text-base font-extrabold tracking-wide flex items-center justify-between ${colorTheme.text}`}>
+                      <span>{sections.psalmVerse}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10`}>
+                        {language === 'english' ? 'Responsorial Psalm' : 'Zaburi ya Kujibu'}
+                      </span>
+                    </h3>
+                    <p className="text-foreground/80 italic leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                      {sections.psalm}
+                    </p>
+                  </div>
+                )}
+
+                {/* Gospel */}
+                {sections.gospel && (
+                  <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
+                    <h3 className={`text-base font-extrabold tracking-wide flex items-center justify-between ${colorTheme.text}`}>
+                      <span>{sections.gospelVerse}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10`}>
+                        {language === 'english' ? 'Gospel' : 'Injili'}
+                      </span>
+                    </h3>
+                    <p className="text-foreground/80 font-medium leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                      {sections.gospel}
+                    </p>
+                  </div>
+                )}
+
+              </div>
+            )}
 
           </div>
         ) : (
@@ -181,7 +331,7 @@ export default function DailyReadings() {
         {/* Footer Note */}
         {reading && (
           <div className="border-t border-border/60 pt-4 mt-8 flex justify-between items-center text-[10px] text-muted-foreground font-semibold">
-            <span>Kabianga Parish Liturgical Board</span>
+            <span>Kabianga Catholic Parish Liturgical Board</span>
             <span>Date: {selectedDate}</span>
           </div>
         )}

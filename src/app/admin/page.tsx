@@ -210,6 +210,30 @@ export default function AdminPage() {
   const [centerImageUrl, setCenterImageUrl] = useState('');
   const [centerImages, setCenterImages] = useState<string[]>([]);
   const [editingCenter, setEditingCenter] = useState<any>(null);
+  const [editingSlide, setEditingSlide] = useState<any>(null);
+  const [editingReading, setEditingReading] = useState<any>(null);
+  const [editingSchedule, setEditingSchedule] = useState<any>(null);
+  const [editingHistory, setEditingHistory] = useState<any>(null);
+
+  // Dynamic Site Settings States
+  const [brandingSetting, setBrandingSetting] = useState('Kabianga Catholic Parish');
+  const [historyIntro, setHistoryIntro] = useState('');
+  const [welcomeSetting, setWelcomeSetting] = useState('');
+  const [emailSetting, setEmailSetting] = useState('');
+  const [phoneSetting, setPhoneSetting] = useState('');
+  const [addressSetting, setAddressSetting] = useState('');
+  const [hoursSetting, setHoursSetting] = useState('');
+
+  // Structured Reading Section states
+  const [readLiturgicalColor, setReadLiturgicalColor] = useState('green');
+  const [firstReadingEn, setFirstReadingEn] = useState('');
+  const [firstReadingSw, setFirstReadingSw] = useState('');
+  const [secondReadingEn, setSecondReadingEn] = useState('');
+  const [secondReadingSw, setSecondReadingSw] = useState('');
+  const [psalmEn, setPsalmEn] = useState('');
+  const [psalmSw, setPsalmSw] = useState('');
+  const [gospelEn, setGospelEn] = useState('');
+  const [gospelSw, setGospelSw] = useState('');
 
   // Track session
   useEffect(() => {
@@ -239,6 +263,21 @@ export default function AdminPage() {
   async function fetchData() {
     setDataLoading(true);
     try {
+      // Fetch site settings globally or when history tab is active
+      if (['history', 'theme'].includes(activeTab) || true) {
+        const { data: settingsData, error: settingsError } = await supabase.from('site_settings').select('*');
+        if (settingsData && settingsData.length > 0) {
+          const settingsMap = new Map(settingsData.map(item => [item.key, item.value]));
+          if (settingsMap.has('branding_name')) setBrandingSetting(settingsMap.get('branding_name')!);
+          if (settingsMap.has('history_content')) setHistoryIntro(settingsMap.get('history_content')!);
+          if (settingsMap.has('welcome_text')) setWelcomeSetting(settingsMap.get('welcome_text')!);
+          if (settingsMap.has('contact_email')) setEmailSetting(settingsMap.get('contact_email')!);
+          if (settingsMap.has('contact_phone')) setPhoneSetting(settingsMap.get('contact_phone')!);
+          if (settingsMap.has('contact_address')) setAddressSetting(settingsMap.get('contact_address')!);
+          if (settingsMap.has('office_hours')) setHoursSetting(settingsMap.get('office_hours')!);
+        }
+      }
+
       if (activeTab === 'carousel') {
         const { data, error } = await supabase.from('carousel_slides').select('*').order('display_order', { ascending: true });
         if (error) throw error;
@@ -341,15 +380,43 @@ export default function AdminPage() {
     e.preventDefault();
     if (!slideImageUrl) return showNotification('error', 'Please upload an image first.');
     try {
-      const displayOrder = slides.length > 0 ? Math.max(...slides.map(s => s.display_order || 0)) + 1 : 0;
-      const { error } = await supabase.from('carousel_slides').insert({
-        title: slideTitle, quote: slideQuote, image_url: slideImageUrl, display_order: displayOrder
-      });
-      if (error) throw error;
-      showNotification('success', 'Slide added successfully!');
+      if (editingSlide) {
+        const { error } = await supabase
+          .from('carousel_slides')
+          .update({
+            title: slideTitle,
+            quote: slideQuote,
+            image_url: slideImageUrl
+          })
+          .eq('id', editingSlide.id);
+        if (error) throw error;
+        showNotification('success', 'Hero slide updated successfully!');
+        setEditingSlide(null);
+      } else {
+        const displayOrder = slides.length > 0 ? Math.max(...slides.map(s => s.display_order || 0)) + 1 : 0;
+        const { error } = await supabase.from('carousel_slides').insert({
+          title: slideTitle, quote: slideQuote, image_url: slideImageUrl, display_order: displayOrder
+        });
+        if (error) throw error;
+        showNotification('success', 'Slide added successfully!');
+      }
       setSlideTitle(''); setSlideQuote(''); setSlideImageUrl('');
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const loadSlideForEdit = (slide: any) => {
+    setEditingSlide(slide);
+    setSlideTitle(slide.title);
+    setSlideQuote(slide.quote || '');
+    setSlideImageUrl(slide.image_url);
+  };
+
+  const handleCancelSlideEdit = () => {
+    setEditingSlide(null);
+    setSlideTitle('');
+    setSlideQuote('');
+    setSlideImageUrl('');
   };
 
   const handleAddHistory = async (e: React.FormEvent) => {
@@ -357,14 +424,63 @@ export default function AdminPage() {
     const yearNum = parseInt(historyYear);
     if (isNaN(yearNum)) return showNotification('error', 'Enter a numeric year.');
     try {
-      const { error } = await supabase.from('history_entries').insert({
-        year: yearNum, title: historyTitle, content: historyContent, image_url: historyImageUrl || null
-      });
-      if (error) throw error;
-      showNotification('success', 'History entry added!');
+      if (editingHistory) {
+        const { error } = await supabase
+          .from('history_entries')
+          .update({
+            year: yearNum, title: historyTitle, content: historyContent, image_url: historyImageUrl || null
+          })
+          .eq('id', editingHistory.id);
+        if (error) throw error;
+        showNotification('success', 'History entry updated successfully!');
+        setEditingHistory(null);
+      } else {
+        const { error } = await supabase.from('history_entries').insert({
+          year: yearNum, title: historyTitle, content: historyContent, image_url: historyImageUrl || null
+        });
+        if (error) throw error;
+        showNotification('success', 'History entry added!');
+      }
       setHistoryYear(''); setHistoryTitle(''); setHistoryContent(''); setHistoryImageUrl('');
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const loadHistoryForEdit = (entry: any) => {
+    setEditingHistory(entry);
+    setHistoryYear(String(entry.year));
+    setHistoryTitle(entry.title);
+    setHistoryContent(entry.content);
+    setHistoryImageUrl(entry.image_url || '');
+  };
+
+  const handleCancelHistoryEdit = () => {
+    setEditingHistory(null);
+    setHistoryYear('');
+    setHistoryTitle('');
+    setHistoryContent('');
+    setHistoryImageUrl('');
+  };
+
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const updates = [
+        { key: 'branding_name', value: brandingSetting },
+        { key: 'history_content', value: historyIntro },
+        { key: 'welcome_text', value: welcomeSetting },
+        { key: 'contact_email', value: emailSetting },
+        { key: 'contact_phone', value: phoneSetting },
+        { key: 'contact_address', value: addressSetting },
+        { key: 'office_hours', value: hoursSetting }
+      ];
+      const { error } = await supabase.from('site_settings').upsert(updates, { onConflict: 'key' });
+      if (error) throw error;
+      showNotification('success', 'Site settings saved successfully!');
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', `Failed to save settings: ${err.message}`);
+    }
   };
 
   const handleAddGallery = async (e: React.FormEvent) => {
@@ -400,29 +516,123 @@ export default function AdminPage() {
   const handleAddSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from('service_schedules').insert({
+      const scheduleData = {
         title: schedTitle, day_of_week: parseInt(schedDay), start_time: `${schedStart}:00`,
         end_time: `${schedEnd}:00`, details: schedDetails, type: schedType
-      });
-      if (error) throw error;
-      showNotification('success', 'Schedule added!');
+      };
+      
+      if (editingSchedule) {
+        const { error } = await supabase
+          .from('service_schedules')
+          .update(scheduleData)
+          .eq('id', editingSchedule.id);
+        if (error) throw error;
+        showNotification('success', 'Schedule updated successfully!');
+        setEditingSchedule(null);
+      } else {
+        const { error } = await supabase.from('service_schedules').insert(scheduleData);
+        if (error) throw error;
+        showNotification('success', 'Schedule added!');
+      }
       setSchedTitle(''); setSchedStart(''); setSchedEnd(''); setSchedDetails('');
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
   };
 
+  const loadScheduleForEdit = (sched: any) => {
+    setEditingSchedule(sched);
+    setSchedTitle(sched.title);
+    setSchedDay(String(sched.day_of_week));
+    setSchedStart(sched.start_time.substring(0, 5));
+    setSchedEnd(sched.end_time.substring(0, 5));
+    setSchedDetails(sched.details || '');
+    setSchedType(sched.type);
+  };
+
+  const handleCancelScheduleEdit = () => {
+    setEditingSchedule(null);
+    setSchedTitle('');
+    setSchedStart('');
+    setSchedEnd('');
+    setSchedDetails('');
+    setSchedType('Mass');
+  };
+
   const handleAddReading = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from('daily_readings').insert({
-        reading_date: readDate, english_reading: readEngText, swahili_reading: readSwaText,
-        english_verse: readEngVerse, swahili_verse: readSwaVerse
-      });
-      if (error) throw error;
-      showNotification('success', 'Daily Readings added!');
-      setReadDate(''); setReadEngVerse(''); setReadEngText(''); setReadSwaVerse(''); setReadSwaText(''); setOcrImageUrl('');
+      const readingData = {
+        reading_date: readDate,
+        english_reading: readEngText,
+        swahili_reading: readSwaText,
+        english_verse: readEngVerse,
+        swahili_verse: readSwaVerse,
+        first_reading_en: firstReadingEn,
+        first_reading_sw: firstReadingSw,
+        second_reading_en: secondReadingEn,
+        second_reading_sw: secondReadingSw,
+        psalm_en: psalmEn,
+        psalm_sw: psalmSw,
+        gospel_en: gospelEn,
+        gospel_sw: gospelSw,
+        liturgical_color: readLiturgicalColor
+      };
+
+      if (editingReading) {
+        const { error } = await supabase
+          .from('daily_readings')
+          .update(readingData)
+          .eq('id', editingReading.id);
+        if (error) throw error;
+        showNotification('success', 'Daily Readings updated successfully!');
+        setEditingReading(null);
+      } else {
+        const { error } = await supabase.from('daily_readings').insert(readingData);
+        if (error) throw error;
+        showNotification('success', 'Daily Readings added!');
+      }
+      setReadDate(''); setReadEngVerse(''); setReadEngText(''); setReadSwaVerse(''); setReadSwaText('');
+      setFirstReadingEn(''); setFirstReadingSw(''); setSecondReadingEn(''); setSecondReadingSw('');
+      setPsalmEn(''); setPsalmSw(''); setGospelEn(''); setGospelSw(''); setReadLiturgicalColor('green');
+      setOcrImageUrl('');
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const loadReadingForEdit = (r: any) => {
+    setEditingReading(r);
+    setReadDate(r.reading_date);
+    setReadEngVerse(r.english_verse || '');
+    setReadEngText(r.english_reading || '');
+    setReadSwaVerse(r.swahili_verse || '');
+    setReadSwaText(r.swahili_reading || '');
+    setFirstReadingEn(r.first_reading_en || '');
+    setFirstReadingSw(r.first_reading_sw || '');
+    setSecondReadingEn(r.second_reading_en || '');
+    setSecondReadingSw(r.second_reading_sw || '');
+    setPsalmEn(r.psalm_en || '');
+    setPsalmSw(r.psalm_sw || '');
+    setGospelEn(r.gospel_en || '');
+    setGospelSw(r.gospel_sw || '');
+    setReadLiturgicalColor(r.liturgical_color || 'green');
+  };
+
+  const handleCancelReadingEdit = () => {
+    setEditingReading(null);
+    setReadDate('');
+    setReadEngVerse('');
+    setReadEngText('');
+    setReadSwaVerse('');
+    setReadSwaText('');
+    setFirstReadingEn('');
+    setFirstReadingSw('');
+    setSecondReadingEn('');
+    setSecondReadingSw('');
+    setPsalmEn('');
+    setPsalmSw('');
+    setGospelEn('');
+    setGospelSw('');
+    setReadLiturgicalColor('green');
   };
 
   const handleInviteAdmin = async (e: React.FormEvent) => {
@@ -958,11 +1168,13 @@ export default function AdminPage() {
             {/* CAROUSEL FORM */}
             {activeTab === 'carousel' && (
               <form onSubmit={handleAddSlide} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">New Hero Slide</h2>
+                <h2 className="text-base font-bold text-foreground border-b pb-2">
+                  {editingSlide ? 'Edit Hero Slide' : 'New Hero Slide'}
+                </h2>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground">Upload Image</label>
                   {slideImageUrl ? (
-                    <div className="relative rounded overflow-hidden aspect-video border"><img src={slideImageUrl} className="object-cover w-full h-full" /><button onClick={() => setSlideImageUrl('')} className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full"><Trash2 className="w-3.5 h-3.5" /></button></div>
+                    <div className="relative rounded overflow-hidden aspect-video border"><img src={slideImageUrl} className="object-cover w-full h-full" /><button type="button" onClick={() => setSlideImageUrl('')} className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full"><Trash2 className="w-3.5 h-3.5" /></button></div>
                   ) : (
                     <CloudinaryUploadWidget onUploadSuccess={setSlideImageUrl} buttonText="Select Slide Photo" croppingAspectRatio={16/9} />
                   )}
@@ -975,7 +1187,16 @@ export default function AdminPage() {
                   <label className="text-xs font-bold text-muted-foreground">Verse / Quote</label>
                   <textarea rows={3} placeholder="Isaiah 40..." value={slideQuote} onChange={e => setSlideQuote(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
                 </div>
-                <button type="submit" disabled={!slideImageUrl} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50">Save Slide</button>
+                <div className="flex gap-2">
+                  {editingSlide && (
+                    <button type="button" onClick={handleCancelSlideEdit} className="flex-1 py-2 bg-muted hover:bg-border text-foreground text-xs font-bold rounded-xl">
+                      Cancel
+                    </button>
+                  )}
+                  <button type="submit" disabled={!slideImageUrl} className="flex-1 py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50">
+                    {editingSlide ? 'Save Changes' : 'Save Slide'}
+                  </button>
+                </div>
               </form>
             )}
 
@@ -1105,12 +1326,25 @@ export default function AdminPage() {
               </form>
             )}
 
-            {/* BIBLE READINGS */}
             {activeTab === 'readings' && (
               <div className="space-y-6">
                 <form onSubmit={handleAddReading} className="space-y-4">
-                  <h2 className="text-base font-bold text-foreground border-b pb-2">Daily Scriptures</h2>
+                  <h2 className="text-base font-bold text-foreground border-b pb-2">
+                    {editingReading ? 'Edit Daily Scriptures' : 'New Daily Scriptures'}
+                  </h2>
                   <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Date</label><input type="date" required value={readDate} onChange={e => setReadDate(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                  
+                  {/* Liturgical Color Dropdown */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Liturgical Color Override</label>
+                    <select value={readLiturgicalColor} onChange={e => setReadLiturgicalColor(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm font-semibold text-foreground">
+                      <option value="green">Ordinary Time (Green)</option>
+                      <option value="purple">Lent / Advent (Purple)</option>
+                      <option value="red">Martyrs / Passion (Red)</option>
+                      <option value="white">Solemnities / Feasts (White/Gold)</option>
+                    </select>
+                  </div>
+
                   <div className="bg-muted/40 p-3 rounded-xl border border-border space-y-2">
                     <label className="text-[10px] font-bold text-accent uppercase tracking-wider block">Scripture OCR Text Extractor</label>
                     {ocrImageUrl ? (
@@ -1129,7 +1363,70 @@ export default function AdminPage() {
                   <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Reading Content</label><textarea rows={3} required placeholder="Full scripture text..." value={readEngText} onChange={e => setReadEngText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                   <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Verse Title</label><input type="text" required placeholder="Yohana 3:16" value={readSwaVerse} onChange={e => setReadSwaVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                   <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Reading Content</label><textarea rows={3} required placeholder="Maandiko ya Kiswahili..." value={readSwaText} onChange={e => setReadSwaText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                  <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Readings</button>
+
+                  {/* Structured readings details */}
+                  <div className="bg-muted/30 p-3 rounded-xl border border-border/80 space-y-3">
+                    <label className="text-[10px] font-black uppercase text-primary tracking-wider block">Structured Sections (Optional)</label>
+                    
+                    {/* First Reading */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-muted-foreground">First Reading (EN)</label>
+                        <textarea rows={2} value={firstReadingEn} onChange={e => setFirstReadingEn(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs bg-background" placeholder="First Reading EN..." />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-muted-foreground">First Reading (SW)</label>
+                        <textarea rows={2} value={firstReadingSw} onChange={e => setFirstReadingSw(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs bg-background" placeholder="Somo la Kwanza SW..." />
+                      </div>
+                    </div>
+
+                    {/* Second Reading */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-muted-foreground">Second Reading (EN)</label>
+                        <textarea rows={2} value={secondReadingEn} onChange={e => setSecondReadingEn(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs bg-background" placeholder="Second Reading EN..." />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-muted-foreground">Second Reading (SW)</label>
+                        <textarea rows={2} value={secondReadingSw} onChange={e => setSecondReadingSw(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs bg-background" placeholder="Somo la Pili SW..." />
+                      </div>
+                    </div>
+
+                    {/* Responsorial Psalm */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-muted-foreground">Responsorial Psalm (EN)</label>
+                        <textarea rows={2} value={psalmEn} onChange={e => setPsalmEn(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs bg-background" placeholder="Psalm EN..." />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-muted-foreground">Zaburi ya Kujibu (SW)</label>
+                        <textarea rows={2} value={psalmSw} onChange={e => setPsalmSw(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs bg-background" placeholder="Zaburi SW..." />
+                      </div>
+                    </div>
+
+                    {/* Gospel */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-muted-foreground">Gospel (EN)</label>
+                        <textarea rows={2} value={gospelEn} onChange={e => setGospelEn(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs bg-background" placeholder="Gospel EN..." />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-muted-foreground">Injili (SW)</label>
+                        <textarea rows={2} value={gospelSw} onChange={e => setGospelSw(e.target.value)} className="w-full p-1.5 border rounded-lg text-xs bg-background" placeholder="Injili SW..." />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {editingReading && (
+                      <button type="button" onClick={handleCancelReadingEdit} className="flex-1 py-2 bg-muted hover:bg-border text-foreground text-xs font-bold rounded-xl">
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" className="flex-1 py-2 bg-primary text-white text-xs font-bold rounded-xl">
+                      {editingReading ? 'Save Changes' : 'Save Readings'}
+                    </button>
+                  </div>
                 </form>
 
                 <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3">
@@ -1226,8 +1523,144 @@ export default function AdminPage() {
               </form>
             )}
 
+            {/* GALLERY FORM */}
+            {activeTab === 'gallery' && (
+              <form onSubmit={handleAddGallery} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">New Gallery Photo</h2>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Upload Photo</label>
+                  {galleryImageUrl ? (
+                    <div className="relative rounded overflow-hidden aspect-video border">
+                      <img src={galleryImageUrl} className="object-cover w-full h-full" />
+                      <button type="button" onClick={() => setGalleryImageUrl('')} className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <CloudinaryUploadWidget onUploadSuccess={setGalleryImageUrl} buttonText="Select Photo" />
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Caption</label>
+                  <input type="text" required placeholder="Photo caption..." value={galleryCaption} onChange={e => setGalleryCaption(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Category</label>
+                  <select value={galleryCategory} onChange={e => setGalleryCategory(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm">
+                    <option value="General">General</option>
+                    <option value="Mass">Holy Mass</option>
+                    <option value="Sacraments">Sacraments</option>
+                    <option value="Youth">Youth Church</option>
+                    <option value="Projects">Projects</option>
+                    <option value="Custom">Custom Category...</option>
+                  </select>
+                </div>
+                {galleryCategory === 'Custom' && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Custom Category Name</label>
+                    <input type="text" required placeholder="e.g. Choir" value={galleryCustomCategory} onChange={e => setGalleryCustomCategory(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+                )}
+                <button type="submit" disabled={!galleryImageUrl} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50">Save Photo</button>
+              </form>
+            )}
+
+            {/* HISTORY & SITE SETTINGS FORMS */}
+            {activeTab === 'history' && (
+              <div className="space-y-6">
+                
+                {/* Form 1: Site settings & copy edit */}
+                <form onSubmit={handleUpdateSettings} className="space-y-4 border-b border-border pb-6">
+                  <h3 className="text-xs font-extrabold text-primary uppercase tracking-wider">Parish Details & Branding</h3>
+                  
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Branding Name</label>
+                    <input type="text" required value={brandingSetting} onChange={e => setBrandingSetting(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm font-semibold" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Welcome Message (Homepage)</label>
+                    <textarea rows={3} required value={welcomeSetting} onChange={e => setWelcomeSetting(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">History Section Intro Text</label>
+                    <textarea rows={4} required value={historyIntro} onChange={e => setHistoryIntro(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Contact Email</label>
+                    <input type="email" required value={emailSetting} onChange={e => setEmailSetting(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Contact Phone</label>
+                    <input type="text" required value={phoneSetting} onChange={e => setPhoneSetting(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Postal / Physical Address</label>
+                    <input type="text" required value={addressSetting} onChange={e => setAddressSetting(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Office Hours</label>
+                    <textarea rows={2} required value={hoursSetting} onChange={e => setHoursSetting(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+
+                  <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-sm">Save Parish Settings</button>
+                </form>
+
+                {/* Form 2: Add/Edit Milestones */}
+                <form onSubmit={handleAddHistory} className="space-y-4">
+                  <h3 className="text-xs font-extrabold text-primary uppercase tracking-wider">{editingHistory ? 'Edit History Milestone' : 'Add History Milestone'}</h3>
+                  
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Year</label>
+                    <input type="number" required placeholder="e.g. 1972" value={historyYear} onChange={e => setHistoryYear(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Milestone Title</label>
+                    <input type="text" required placeholder="e.g. Elevation to Parish" value={historyTitle} onChange={e => setHistoryTitle(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Description Content</label>
+                    <textarea rows={3} required placeholder="Detailed historical description..." value={historyContent} onChange={e => setHistoryContent(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-muted-foreground">Milestone Image (Optional)</label>
+                    {historyImageUrl ? (
+                      <div className="relative rounded overflow-hidden aspect-video border">
+                        <img src={historyImageUrl} className="object-cover w-full h-full" />
+                        <button type="button" onClick={() => setHistoryImageUrl('')} className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <CloudinaryUploadWidget onUploadSuccess={setHistoryImageUrl} buttonText="Select Milestone Image" />
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    {editingHistory && (
+                      <button type="button" onClick={handleCancelHistoryEdit} className="flex-1 py-2 bg-muted hover:bg-border text-foreground text-xs font-bold rounded-xl">
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" className="flex-1 py-2 bg-primary text-white text-xs font-bold rounded-xl">
+                      {editingHistory ? 'Save Changes' : 'Save Milestone'}
+                    </button>
+                  </div>
+                </form>
+
+              </div>
+            )}
+
             {/* GENERAL TEXT FOR DIRECT READ TABS */}
-            {['bookings', 'registrations', 'prayers', 'history', 'gallery'].includes(activeTab) && (
+            {['bookings', 'registrations', 'prayers'].includes(activeTab) && (
               <div className="bg-muted/40 p-4 rounded-xl space-y-2 border">
                 <h3 className="font-extrabold text-sm text-foreground uppercase tracking-wide">Listing Administrator</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -1253,7 +1686,10 @@ export default function AdminPage() {
                     <img src={slide.image_url} className="aspect-video object-cover" />
                     <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                       <div><h4 className="font-extrabold text-sm">{slide.title}</h4><p className="text-xs text-muted-foreground italic truncate">{slide.quote}</p></div>
-                      <button onClick={() => handleDelete('carousel_slides', slide.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Remove Slide</button>
+                      <div className="flex gap-2">
+                        <button onClick={() => loadSlideForEdit(slide)} className="flex-1 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg transition-all">Edit Slide</button>
+                        <button onClick={() => handleDelete('carousel_slides', slide.id)} className="flex-1 py-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold rounded-lg transition-all">Remove</button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1330,7 +1766,10 @@ export default function AdminPage() {
                       </p>
                       {s.details && <p className="text-[10px] text-muted-foreground italic mt-0.5">{s.details}</p>}
                     </div>
-                    <button onClick={() => handleDelete('service_schedules', s.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Schedule</button>
+                    <div className="flex gap-2">
+                      <button onClick={() => loadScheduleForEdit(s)} className="flex-1 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg transition-all">Edit Schedule</button>
+                      <button onClick={() => handleDelete('service_schedules', s.id)} className="flex-1 py-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold rounded-lg transition-all">Delete</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1345,7 +1784,10 @@ export default function AdminPage() {
                       <h4 className="font-extrabold text-sm text-foreground">{r.reading_date}</h4>
                       <p className="text-xs text-muted-foreground mt-0.5">Eng: {r.english_verse} • Swa: {r.swahili_verse}</p>
                     </div>
-                    <button onClick={() => handleDelete('daily_readings', r.id)} className="px-3 py-1.5 bg-destructive/10 text-destructive text-xs font-bold rounded-lg shrink-0">Delete</button>
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => loadReadingForEdit(r)} className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg transition-all">Edit Details</button>
+                      <button onClick={() => handleDelete('daily_readings', r.id)} className="px-3 py-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold rounded-lg transition-all">Delete</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1492,7 +1934,10 @@ export default function AdminPage() {
                       <h4 className="font-extrabold text-sm mt-1">{entry.title}</h4>
                       <p className="text-xs text-muted-foreground line-clamp-3 mt-1">{entry.content}</p>
                     </div>
-                    <button onClick={() => handleDelete('history_entries', entry.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Delete Milestone</button>
+                    <div className="flex gap-2">
+                      <button onClick={() => loadHistoryForEdit(entry)} className="flex-1 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg transition-all">Edit Milestone</button>
+                      <button onClick={() => handleDelete('history_entries', entry.id)} className="flex-1 py-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold rounded-lg transition-all">Remove</button>
+                    </div>
                   </div>
                 ))}
               </div>

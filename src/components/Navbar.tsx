@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, BookOpen, Users, Compass, ShieldCheck, Palette, Sun, Landmark } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isBypassed, setIsBypassed] = useState(false);
+  const [brandingName, setBrandingName] = useState('Kabianga Catholic Parish');
 
   useEffect(() => {
     // Check initial bypass state
@@ -15,6 +17,23 @@ export default function Navbar() {
     if (stored) {
       setTimeout(() => setIsBypassed(stored), 0);
     }
+    
+    // Fetch dynamic branding name
+    async function fetchBranding() {
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'branding_name')
+          .maybeSingle();
+        if (data?.value) {
+          setBrandingName(data.value);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    fetchBranding();
   }, []);
 
   const toggleThemeBypass = () => {
@@ -55,7 +74,7 @@ export default function Navbar() {
             </div>
             <div>
               <Link href="/" className="text-xl font-bold tracking-tight text-foreground hover:opacity-90">
-                Kabianga Parish
+                {brandingName}
               </Link>
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Parish Community</p>
             </div>
@@ -125,7 +144,7 @@ export default function Navbar() {
             KP
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight text-foreground">Kabianga Parish</h1>
+            <h1 className="text-base font-bold tracking-tight text-foreground">{brandingName}</h1>
           </div>
         </div>
 

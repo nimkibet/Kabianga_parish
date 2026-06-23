@@ -64,6 +64,21 @@ async function getHistoryEntries(): Promise<HistoryEntry[]> {
 export default async function HistoryPage() {
   const historyEntries = await getHistoryEntries();
 
+  // Fetch dynamic history content block from site_settings
+  let historyIntroText = "St. John Paul II Kabianga Catholic Parish is a relatively young and rapidly growing parish within the Catholic Diocese of Kericho. Its emergence and growth are deeply intertwined with the educational expansion of the region.";
+  try {
+    const { data } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'history_content')
+      .maybeSingle();
+    if (data?.value) {
+      historyIntroText = data.value;
+    }
+  } catch (err) {
+    console.error('Error fetching dynamic history content:', err);
+  }
+
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -76,6 +91,11 @@ export default async function HistoryPage() {
         <p className="text-muted-foreground text-sm max-w-xl">
           Tracing our steps of faith and community building from 1972 to the present day.
         </p>
+      </div>
+
+      {/* Dynamic Main History Paragraph */}
+      <div className="bg-card border border-border p-6 rounded-2xl shadow-sm text-foreground/90 text-sm sm:text-base leading-relaxed max-w-3xl">
+        <p>{historyIntroText}</p>
       </div>
 
       {/* Vertical Timeline Layout for Mobile-First */}
@@ -96,7 +116,7 @@ export default async function HistoryPage() {
                 </span>
                 <span className="text-xs text-muted-foreground font-semibold flex items-center space-x-1">
                   <MapPin className="w-3.5 h-3.5 text-muted-foreground/60" />
-                  <span>Kabianga Parish</span>
+                  <span>Kabianga Catholic Parish</span>
                 </span>
               </div>
 

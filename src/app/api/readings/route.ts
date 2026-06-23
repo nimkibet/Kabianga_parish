@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { parseUSCCBMarkdown, parseSwahiliReadings, parseLegacyReading, formatToLegacyString } from '@/lib/readingsParser';
 
 function cleanHtml(html: string): string {
   if (!html) return '';
@@ -171,35 +172,65 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
   const year = targetDateObj.getUTCFullYear();
   const month = String(targetDateObj.getUTCMonth() + 1).padStart(2, '0');
   const day = String(targetDateObj.getUTCDate()).padStart(2, '0');
-  const dateFormattedYYYYMMDD = `${year}${month}${day}`;
 
-  // 1. Scrape English readings from Universalis
+  // 1. Scrape English readings
   let englishVerse = 'Daily Mass Readings';
   let englishReading = '';
-  
+  let parsedEn: any = { firstReading: '', firstReadingVerse: '', secondReading: '', secondReadingVerse: '', psalm: '', psalmVerse: '', gospel: '', gospelVerse: '', liturgicalColor: 'green' };
+
+  // Try USCCB Markdown (highly reliable)
   try {
-    const universalisUrl = `https://universalis.com/${dateFormattedYYYYMMDD}/mass.htm`;
-    const response = await fetch(universalisUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
-      next: { revalidate: 3600 }
+    const MM = String(targetDateObj.getUTCMonth() + 1).padStart(2, '0');
+    const DD = String(targetDateObj.getUTCDate()).padStart(2, '0');
+    const YY = String(targetDateObj.getUTCFullYear() % 100).padStart(2, '0');
+    const usccbUrl = `https://bible.usccb.org/bible/readings/${MM}${DD}${YY}.cfm.md`;
+    
+    console.log(`[Readings Scraper] Fetching USCCB readings in Markdown: ${usccbUrl}`);
+    const response = await fetch(usccbUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
     });
+
     if (response.ok) {
-      const html = await response.text();
-      const parsed = parseUniversalisHtml(html);
-      if (parsed.text) {
-        englishReading = parsed.text;
-        englishVerse = parsed.verse;
-      }
+      const md = await response.text();
+      parsedEn = parseUSCCBMarkdown(md);
+      englishReading = formatToLegacyString(parsedEn);
+      englishVerse = parsedEn.firstReadingVerse && parsedEn.gospelVerse
+        ? `${parsedEn.firstReadingVerse} & ${parsedEn.gospelVerse}`
+        : parsedEn.firstReadingVerse || parsedEn.gospelVerse || 'Daily Mass Readings';
     }
-  } catch (engErr: unknown) {
-    const msg = engErr instanceof Error ? engErr.message : String(engErr);
-    console.error(`Failed to scrape English readings for ${targetDateStr}:`, msg);
+  } catch (err: any) {
+    console.warn('[Readings Scraper] USCCB fetch failed, trying Universalis fallback:', err.message);
+    
+    // Universalis HTML fallback
+    try {
+      const dateFormattedYYYYMMDD = `${year}${month}${day}`;
+      const universalisUrl = `https://universalis.com/${dateFormattedYYYYMMDD}/mass.htm`;
+      const response = await fetch(universalisUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+      });
+      if (response.ok) {
+        const html = await response.text();
+        const parsed = parseUniversalisHtml(html);
+        if (parsed.text) {
+          englishReading = parsed.text;
+          englishVerse = parsed.verse;
+          const legacyParsed = parseLegacyReading(englishReading);
+          parsedEn = {
+            ...legacyParsed,
+            liturgicalColor: html.toLowerCase().includes('ordinary time') ? 'green' : html.toLowerCase().includes('lent') || html.toLowerCase().includes('advent') ? 'purple' : 'white'
+          };
+        }
+      }
+    } catch (engErr: any) {
+      console.error('Failed to scrape English readings from Universalis:', engErr.message);
+    }
   }
-  
+
   // 2. Scrape Swahili readings from Mkatoliki Leo
   let swahiliVerse = 'Masomo ya Misa';
   let swahiliReading = '';
-  
+  let parsedSw: any = { firstReading: '', firstReadingVerse: '', secondReading: '', secondReadingVerse: '', psalm: '', psalmVerse: '', gospel: '', gospelVerse: '' };
+
   try {
     const swahiliUrl = constructSwahiliUrl(targetDateObj);
     console.log(`[Readings Scraper] Scraping Swahili readings from: ${swahiliUrl}`);
@@ -210,12 +241,12 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
     let fetchedOk = false;
     if (postResponse.ok) {
       const postHtml = await postResponse.text();
-      const parsed = parseSwahiliHtml(postHtml);
-      if (parsed.text) {
-        swahiliReading = parsed.text;
-        swahiliVerse = parsed.verse;
-        fetchedOk = true;
-      }
+      parsedSw = parseSwahiliReadings(postHtml);
+      swahiliReading = formatToLegacyString(parsedSw);
+      swahiliVerse = parsedSw.firstReadingVerse && parsedSw.gospelVerse
+        ? `${parsedSw.firstReadingVerse} na ${parsedSw.gospelVerse}`
+        : parsedSw.firstReadingVerse || parsedSw.gospelVerse || 'Masomo ya Misa';
+      fetchedOk = true;
     }
     
     // Fallback to scraping list page if direct predicted URL did not work
@@ -237,18 +268,17 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
           
           if (fallbackPostResponse.ok) {
             const postHtml = await fallbackPostResponse.text();
-            const parsed = parseSwahiliHtml(postHtml);
-            if (parsed.text) {
-              swahiliReading = parsed.text;
-              swahiliVerse = parsed.verse;
-            }
+            parsedSw = parseSwahiliReadings(postHtml);
+            swahiliReading = formatToLegacyString(parsedSw);
+            swahiliVerse = parsedSw.firstReadingVerse && parsedSw.gospelVerse
+              ? `${parsedSw.firstReadingVerse} na ${parsedSw.gospelVerse}`
+              : parsedSw.firstReadingVerse || parsedSw.gospelVerse || 'Masomo ya Misa';
           }
         }
       }
     }
-  } catch (swaErr: unknown) {
-    const msg = swaErr instanceof Error ? swaErr.message : String(swaErr);
-    console.error(`Failed to scrape Swahili readings for ${targetDateStr}:`, msg);
+  } catch (swaErr: any) {
+    console.error(`Failed to scrape Swahili readings for ${targetDateStr}:`, swaErr.message);
   }
   
   // Fail if both scrapers returned absolutely nothing
@@ -267,23 +297,56 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
   }
   
   // Save/cache the record in Supabase
-  const newRecord = {
+  const newRecord: any = {
     reading_date: targetDateStr, // Use correct database column
     english_reading: englishReading,
     swahili_reading: swahiliReading,
     english_verse: englishVerse,
-    swahili_verse: swahiliVerse
+    swahili_verse: swahiliVerse,
+    first_reading_en: parsedEn.firstReading,
+    first_reading_sw: parsedSw.firstReading,
+    second_reading_en: parsedEn.secondReading,
+    second_reading_sw: parsedSw.secondReading,
+    psalm_en: parsedEn.psalm,
+    psalm_sw: parsedSw.psalm,
+    gospel_en: parsedEn.gospel,
+    gospel_sw: parsedSw.gospel,
+    liturgical_color: parsedEn.liturgicalColor || 'green'
   };
   
-  const { data: insertedData, error: insertError } = await supabase
+  let toInsert = { ...newRecord };
+  let { data: insertedData, error: insertError } = await supabase
     .from('daily_readings')
-    .insert(newRecord)
+    .insert(toInsert)
     .select()
     .single();
     
   if (insertError) {
-    console.warn(`Failed to cache daily reading for ${targetDateStr} in Supabase:`, insertError.message);
-    return newRecord;
+    if (insertError.message.includes('column') && (insertError.message.includes('does not exist') || insertError.message.includes('not found'))) {
+      console.log('[Readings Cache] Missing schema columns on remote database. Falling back to base table schema.');
+      toInsert = {
+        reading_date: targetDateStr,
+        english_reading: englishReading,
+        swahili_reading: swahiliReading,
+        english_verse: englishVerse,
+        swahili_verse: swahiliVerse
+      };
+      
+      const { data: retryData, error: retryError } = await supabase
+        .from('daily_readings')
+        .insert(toInsert)
+        .select()
+        .single();
+        
+      if (retryError) {
+        console.warn(`Failed to cache daily reading for ${targetDateStr} (retry):`, retryError.message);
+        return toInsert;
+      }
+      return retryData;
+    } else {
+      console.warn(`Failed to cache daily reading for ${targetDateStr} in Supabase:`, insertError.message);
+      return newRecord;
+    }
   }
   
   return insertedData;
