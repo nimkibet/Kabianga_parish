@@ -18,7 +18,7 @@ export const LITURGICAL_THEMES: Record<string, LiturgicalTheme> = {
     name: 'Advent (Purple)',
     primary: '#7c3aed',      // Purple
     primaryHover: '#6d28d9',
-    background: '#f8f0fc',   // Tinted light purple
+    background: '#f3e8ff',   // Tinted light purple
     foreground: '#1e1b4b',
   },
   CHRISTMAS: {
@@ -32,21 +32,21 @@ export const LITURGICAL_THEMES: Record<string, LiturgicalTheme> = {
     name: 'Lent (Purple)',
     primary: '#6b21a8',      // Deep Purple
     primaryHover: '#581c87',
-    background: '#f8f0fc',   // Tinted light purple
+    background: '#f3e8ff',   // Tinted light purple
     foreground: '#1e1b4b',
   },
   EASTER: {
     name: 'Easter (White/Gold)',
     primary: '#d4af37',      // Metallic Gold
     primaryHover: '#c5a028',
-    background: '#fffdf5',   // Tinted warm gold
+    background: '#fffbeb',   // Tinted warm gold
     foreground: '#3c2a00',
   },
   ORDINARY: {
     name: 'Ordinary Time (Green)',
     primary: '#16a34a',      // Green
     primaryHover: '#15803d',
-    background: '#f0fdf4',   // Tinted light green
+    background: '#e8f5e9',   // Tinted light green
     foreground: '#14532d',
   },
 };

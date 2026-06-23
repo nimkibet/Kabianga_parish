@@ -107,8 +107,8 @@ export default function Navbar() {
               onClick={toggleThemeBypass}
               className={`touch-target p-2 rounded-lg transition-all flex items-center justify-center border ${
                 isBypassed
-                  ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30'
-                  : 'bg-muted text-foreground/75 border-border hover:bg-border'
+                  ? 'bg-muted text-foreground/75 border-border hover:bg-border'
+                  : 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
               }`}
               title={isBypassed ? "Switch to Liturgical Colors" : "Switch to Default White Mode"}
             >
@@ -135,8 +135,8 @@ export default function Navbar() {
             onClick={toggleThemeBypass}
             className={`touch-target p-1.5 rounded-lg border flex items-center justify-center transition-all ${
               isBypassed
-                ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30'
-                : 'bg-muted text-foreground/75 border-border'
+                ? 'bg-muted text-foreground/75 border-border'
+                : 'bg-primary/10 text-primary border-primary/30'
             }`}
             aria-label="Toggle default light theme"
           >
