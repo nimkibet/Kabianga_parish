@@ -115,21 +115,44 @@ export function parseUSCCBMarkdown(md: string): ParsedReadings {
 }
 
 /**
- * Parses Swahili readings from Mkatoliki Leo HTML
+ * Parses Swahili readings from Mkatoliki Leo HTML.
+ * Preserves line breaks (stanzas, refrains) by converting <br> → \n before stripping tags.
  */
 export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturgicalColor'> {
-  const cleanHtml = (txt: string) => {
+  // Clean a title/verse field: strip all tags, collapse whitespace
+  const cleanTitle = (txt: string) => {
+    if (!txt) return '';
+    return txt.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  };
+
+  // Clean body content: convert <br> variants to newlines FIRST, then strip tags.
+  // This preserves psalm stanzas and refrains that are separated by <br />.
+  const cleanContent = (txt: string) => {
     if (!txt) return '';
     return txt
-      .replace(/<[^>]*>/g, '')
-      .replace(/\s+/g, ' ')
+      .replace(/<br\s*\/?>/gi, '\n')       // <br> / <br /> → newline
+      .replace(/<[^>]*>/g, '')             // strip remaining HTML tags
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&#160;/g, ' ')
+      .split('\n')                          // normalise each line separately
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter((line, i, arr) => {
+        // Keep the line if it has content, OR if it's an empty line between two non-empty lines (stanza break)
+        if (line.length > 0) return true;
+        const prev = arr[i - 1];
+        const next = arr[i + 1];
+        return (prev && prev.length > 0) && (next && next.length > 0);
+      })
+      .join('\n')
       .trim();
   };
 
-  // Capture each section: title, verse reference, and ALL paragraphs that follow before the next section
-  // Strategy: split by reading_title spans and parse each block
+  // Block-based regex: capture everything between section title headers
   const blockRegex = /<span class="reading_title">([\s\S]*?)<\/span>\s*<h3 class="reading">([\s\S]*?)<\/h3>([\s\S]*?)(?=<span class="reading_title">|<div class="entity_footer">|$)/gi;
-  
+
   let match;
   let firstReading = '';
   let firstReadingVerse = '';
@@ -141,18 +164,18 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
   let alleluiaVerse = '';
   let gospel = '';
   let gospelVerse = '';
-  
+
   while ((match = blockRegex.exec(html)) !== null) {
-    const title = cleanHtml(match[1]);
-    const verse = cleanHtml(match[2]);
-    // Extract all <p> text from the block body (match[3])
+    const title = cleanTitle(match[1]);
+    const verse = cleanTitle(match[2]);
     const bodyHtml = match[3];
+
+    // Collect all <p> content, preserving <br> line breaks within each paragraph
     const allParas = [...bodyHtml.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)]
-      .map(pm => cleanHtml(pm[1]))
-      .filter(t => t.length > 0)
-      .join('\n');
-    const content = allParas || cleanHtml(bodyHtml);
-    
+      .map(pm => cleanContent(pm[1]))
+      .filter(t => t.length > 0);
+    const content = allParas.join('\n\n') || cleanContent(bodyHtml);
+
     const titleLower = title.toLowerCase();
     if (titleLower.includes('somo la 1') || titleLower.includes('somo la kwanza')) {
       firstReading = content;
@@ -165,7 +188,6 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
       titleLower.includes('wimbo') ||
       titleLower.includes('zaburi')
     ) {
-      // Responsorial Psalm (Wimbo wa Katikati)
       psalm = content;
       psalmVerse = verse;
     } else if (
@@ -173,7 +195,6 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
       titleLower.includes('aleluya') ||
       titleLower.includes('gospel acclamation')
     ) {
-      // Alleluia verse (Shangilio)
       alleluia = content;
       alleluiaVerse = verse;
     } else if (titleLower.includes('injili')) {
@@ -182,7 +203,7 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
     }
   }
 
-  // Backup parser for structure changes
+  // Backup parser: used if block regex fails (site structure change)
   if (!firstReading && !gospel) {
     const divRegex = /<div class="readings">([\s\S]*?)<\/div>/gi;
     let divMatch;
@@ -191,28 +212,23 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
       const titleMatch = innerHtml.match(/<span class="reading_title">([\s\S]*?)<\/span>/i);
       const verseMatch = innerHtml.match(/<h3 class="reading">([\s\S]*?)<\/h3>/i);
       const allPMatches = [...innerHtml.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
-      
+
       if (titleMatch && verseMatch && allPMatches.length > 0) {
-        const title = cleanHtml(titleMatch[1]);
-        const verse = cleanHtml(verseMatch[1]);
-        const content = allPMatches.map(pm => cleanHtml(pm[1])).filter(t => t).join('\n');
-        
+        const title = cleanTitle(titleMatch[1]);
+        const verse = cleanTitle(verseMatch[1]);
+        const content = allPMatches.map(pm => cleanContent(pm[1])).filter(t => t).join('\n\n');
+
         const titleLower = title.toLowerCase();
         if (titleLower.includes('somo la 1') || titleLower.includes('somo la kwanza')) {
-          firstReading = content;
-          firstReadingVerse = verse;
+          firstReading = content; firstReadingVerse = verse;
         } else if (titleLower.includes('somo la 2') || titleLower.includes('somo la pili')) {
-          secondReading = content;
-          secondReadingVerse = verse;
+          secondReading = content; secondReadingVerse = verse;
         } else if (titleLower.includes('wimbo wa katikati') || titleLower.includes('wimbo') || titleLower.includes('zaburi')) {
-          psalm = content;
-          psalmVerse = verse;
+          psalm = content; psalmVerse = verse;
         } else if (titleLower.includes('shangilio') || titleLower.includes('aleluya')) {
-          alleluia = content;
-          alleluiaVerse = verse;
+          alleluia = content; alleluiaVerse = verse;
         } else if (titleLower.includes('injili')) {
-          gospel = content;
-          gospelVerse = verse;
+          gospel = content; gospelVerse = verse;
         }
       }
     }
