@@ -606,6 +606,8 @@ export default function AdminPage() {
           secondReadingVerse: 'Second Reading',
           psalm: psalmEn,
           psalmVerse: 'Responsorial Psalm',
+          alleluia: '',
+          alleluiaVerse: '',
           gospel: gospelEn,
           gospelVerse: 'Gospel'
         });
@@ -619,6 +621,8 @@ export default function AdminPage() {
           secondReadingVerse: 'Somo la Pili',
           psalm: psalmSw,
           psalmVerse: 'Zaburi ya Kujibu',
+          alleluia: '',
+          alleluiaVerse: '',
           gospel: gospelSw,
           gospelVerse: 'Injili'
         });

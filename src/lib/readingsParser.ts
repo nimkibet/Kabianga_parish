@@ -9,6 +9,8 @@ export interface ParsedReadings {
   secondReadingVerse: string;
   psalm: string;
   psalmVerse: string;
+  alleluia: string;
+  alleluiaVerse: string;
   gospel: string;
   gospelVerse: string;
   liturgicalColor: string;
@@ -23,6 +25,7 @@ export function parseUSCCBMarkdown(md: string): ParsedReadings {
       firstReading: '', firstReadingVerse: '',
       secondReading: '', secondReadingVerse: '',
       psalm: '', psalmVerse: '',
+      alleluia: '', alleluiaVerse: '',
       gospel: '', gospelVerse: '',
       liturgicalColor: 'green'
     };
@@ -34,10 +37,12 @@ export function parseUSCCBMarkdown(md: string): ParsedReadings {
   let firstReading = '';
   let secondReading = '';
   let psalm = '';
+  let alleluia = '';
   let gospel = '';
   let firstReadingVerse = '';
   let secondReadingVerse = '';
   let psalmVerse = '';
+  let alleluiaVerse = '';
   let gospelVerse = '';
   let liturgicalColor = 'green';
 
@@ -85,6 +90,9 @@ export function parseUSCCBMarkdown(md: string): ParsedReadings {
     } else if (header.includes('responsorial psalm') || header.includes('psalm')) {
       psalm = contentText;
       psalmVerse = verse || 'Responsorial Psalm';
+    } else if (header.includes('alleluia') || header.includes('gospel acclamation') || header.includes('sequence')) {
+      alleluia = contentText;
+      alleluiaVerse = verse || 'Alleluia';
     } else if (header.includes('gospel')) {
       gospel = contentText;
       gospelVerse = verse || 'Gospel';
@@ -98,6 +106,8 @@ export function parseUSCCBMarkdown(md: string): ParsedReadings {
     secondReadingVerse,
     psalm,
     psalmVerse,
+    alleluia,
+    alleluiaVerse,
     gospel,
     gospelVerse,
     liturgicalColor
@@ -116,7 +126,9 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
       .trim();
   };
 
-  const regex = /<span class="reading_title">([\s\S]*?)<\/span>\s*<h3 class="reading">([\s\S]*?)<\/h3>\s*<p[^>]*>([\s\S]*?)<\/p>/gi;
+  // Capture each section: title, verse reference, and ALL paragraphs that follow before the next section
+  // Strategy: split by reading_title spans and parse each block
+  const blockRegex = /<span class="reading_title">([\s\S]*?)<\/span>\s*<h3 class="reading">([\s\S]*?)<\/h3>([\s\S]*?)(?=<span class="reading_title">|<div class="entity_footer">|$)/gi;
   
   let match;
   let firstReading = '';
@@ -125,13 +137,21 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
   let secondReadingVerse = '';
   let psalm = '';
   let psalmVerse = '';
+  let alleluia = '';
+  let alleluiaVerse = '';
   let gospel = '';
   let gospelVerse = '';
   
-  while ((match = regex.exec(html)) !== null) {
+  while ((match = blockRegex.exec(html)) !== null) {
     const title = cleanHtml(match[1]);
     const verse = cleanHtml(match[2]);
-    const content = cleanHtml(match[3]);
+    // Extract all <p> text from the block body (match[3])
+    const bodyHtml = match[3];
+    const allParas = [...bodyHtml.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)]
+      .map(pm => cleanHtml(pm[1]))
+      .filter(t => t.length > 0)
+      .join('\n');
+    const content = allParas || cleanHtml(bodyHtml);
     
     const titleLower = title.toLowerCase();
     if (titleLower.includes('somo la 1') || titleLower.includes('somo la kwanza')) {
@@ -140,9 +160,22 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
     } else if (titleLower.includes('somo la 2') || titleLower.includes('somo la pili')) {
       secondReading = content;
       secondReadingVerse = verse;
-    } else if (titleLower.includes('zaburi')) {
+    } else if (
+      titleLower.includes('wimbo wa katikati') ||
+      titleLower.includes('wimbo') ||
+      titleLower.includes('zaburi')
+    ) {
+      // Responsorial Psalm (Wimbo wa Katikati)
       psalm = content;
       psalmVerse = verse;
+    } else if (
+      titleLower.includes('shangilio') ||
+      titleLower.includes('aleluya') ||
+      titleLower.includes('gospel acclamation')
+    ) {
+      // Alleluia verse (Shangilio)
+      alleluia = content;
+      alleluiaVerse = verse;
     } else if (titleLower.includes('injili')) {
       gospel = content;
       gospelVerse = verse;
@@ -157,12 +190,12 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
       const innerHtml = divMatch[1];
       const titleMatch = innerHtml.match(/<span class="reading_title">([\s\S]*?)<\/span>/i);
       const verseMatch = innerHtml.match(/<h3 class="reading">([\s\S]*?)<\/h3>/i);
-      const pMatch = innerHtml.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+      const allPMatches = [...innerHtml.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
       
-      if (titleMatch && verseMatch && pMatch) {
+      if (titleMatch && verseMatch && allPMatches.length > 0) {
         const title = cleanHtml(titleMatch[1]);
         const verse = cleanHtml(verseMatch[1]);
-        const content = cleanHtml(pMatch[1]);
+        const content = allPMatches.map(pm => cleanHtml(pm[1])).filter(t => t).join('\n');
         
         const titleLower = title.toLowerCase();
         if (titleLower.includes('somo la 1') || titleLower.includes('somo la kwanza')) {
@@ -171,9 +204,12 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
         } else if (titleLower.includes('somo la 2') || titleLower.includes('somo la pili')) {
           secondReading = content;
           secondReadingVerse = verse;
-        } else if (titleLower.includes('zaburi')) {
+        } else if (titleLower.includes('wimbo wa katikati') || titleLower.includes('wimbo') || titleLower.includes('zaburi')) {
           psalm = content;
           psalmVerse = verse;
+        } else if (titleLower.includes('shangilio') || titleLower.includes('aleluya')) {
+          alleluia = content;
+          alleluiaVerse = verse;
         } else if (titleLower.includes('injili')) {
           gospel = content;
           gospelVerse = verse;
@@ -189,6 +225,8 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
     secondReadingVerse,
     psalm,
     psalmVerse,
+    alleluia,
+    alleluiaVerse,
     gospel,
     gospelVerse
   };
@@ -203,6 +241,7 @@ export function parseLegacyReading(text: string): Omit<ParsedReadings, 'liturgic
       firstReading: '', firstReadingVerse: '',
       secondReading: '', secondReadingVerse: '',
       psalm: '', psalmVerse: '',
+      alleluia: '', alleluiaVerse: '',
       gospel: '', gospelVerse: ''
     };
   }
@@ -214,6 +253,8 @@ export function parseLegacyReading(text: string): Omit<ParsedReadings, 'liturgic
   let secondReadingVerse = '';
   let psalm = '';
   let psalmVerse = '';
+  let alleluia = '';
+  let alleluiaVerse = '';
   let gospel = '';
   let gospelVerse = '';
   
@@ -231,9 +272,12 @@ export function parseLegacyReading(text: string): Omit<ParsedReadings, 'liturgic
     } else if (titleLower.includes('reading 2') || titleLower.includes('somo la 2') || titleLower.includes('somo la pili')) {
       secondReading = content;
       secondReadingVerse = verse || 'Reading 2';
-    } else if (titleLower.includes('psalm') || titleLower.includes('zaburi')) {
+    } else if (titleLower.includes('psalm') || titleLower.includes('zaburi') || titleLower.includes('wimbo wa katikati') || titleLower.includes('wimbo')) {
       psalm = content;
       psalmVerse = verse || 'Responsorial Psalm';
+    } else if (titleLower.includes('alleluia') || titleLower.includes('shangilio') || titleLower.includes('aleluya') || titleLower.includes('gospel acclamation')) {
+      alleluia = content;
+      alleluiaVerse = verse || 'Alleluia';
     } else if (titleLower.includes('gospel') || titleLower.includes('injili')) {
       gospel = content;
       gospelVerse = verse || 'Gospel';
@@ -247,6 +291,8 @@ export function parseLegacyReading(text: string): Omit<ParsedReadings, 'liturgic
     secondReadingVerse,
     psalm,
     psalmVerse,
+    alleluia,
+    alleluiaVerse,
     gospel,
     gospelVerse
   };
@@ -265,6 +311,9 @@ export function formatToLegacyString(parsed: Omit<ParsedReadings, 'liturgicalCol
   }
   if (parsed.psalm) {
     result += `=== Responsorial Psalm (${parsed.psalmVerse}) ===\n${parsed.psalm}\n\n`;
+  }
+  if (parsed.alleluia) {
+    result += `=== Alleluia (${parsed.alleluiaVerse}) ===\n${parsed.alleluia}\n\n`;
   }
   if (parsed.gospel) {
     result += `=== Gospel (${parsed.gospelVerse}) ===\n${parsed.gospel}\n\n`;

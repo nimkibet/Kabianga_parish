@@ -229,7 +229,7 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
   // 2. Scrape Swahili readings from Mkatoliki Leo
   let swahiliVerse = 'Masomo ya Misa';
   let swahiliReading = '';
-  let parsedSw: any = { firstReading: '', firstReadingVerse: '', secondReading: '', secondReadingVerse: '', psalm: '', psalmVerse: '', gospel: '', gospelVerse: '' };
+  let parsedSw: any = { firstReading: '', firstReadingVerse: '', secondReading: '', secondReadingVerse: '', psalm: '', psalmVerse: '', alleluia: '', alleluiaVerse: '', gospel: '', gospelVerse: '' };
 
   try {
     const swahiliUrl = constructSwahiliUrl(targetDateObj);
@@ -319,6 +319,10 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
     second_reading_sw: parsedSw.secondReading,
     psalm_en: parsedEn.psalm,
     psalm_sw: parsedSw.psalm,
+    alleluia_en: parsedEn.alleluia || '',
+    alleluia_verse_en: parsedEn.alleluiaVerse || '',
+    alleluia_sw: parsedSw.alleluia || '',
+    alleluia_verse_sw: parsedSw.alleluiaVerse || '',
     gospel_en: parsedEn.gospel,
     gospel_sw: parsedSw.gospel,
     liturgical_color: parsedEn.liturgicalColor || 'green'
@@ -428,6 +432,10 @@ export async function GET(request: NextRequest) {
         second_reading_sw: parsedSw.secondReading,
         psalm_en: parsedEn.psalm,
         psalm_sw: parsedSw.psalm,
+        alleluia_en: parsedEn.alleluia || '',
+        alleluia_verse_en: parsedEn.alleluiaVerse || '',
+        alleluia_sw: parsedSw.alleluia || '',
+        alleluia_verse_sw: parsedSw.alleluiaVerse || '',
         gospel_en: parsedEn.gospel,
         gospel_sw: parsedSw.gospel,
         liturgical_color: liturgicalColor
