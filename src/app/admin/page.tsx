@@ -26,9 +26,49 @@ import {
   Check,
   X,
   Landmark,
-  ShieldCheck
+  ShieldCheck,
+  Menu
 } from 'lucide-react';
 import CloudinaryUploadWidget from '@/components/CloudinaryUploadWidget';
+
+const NAVIGATION_CATEGORIES = [
+  {
+    name: 'Content',
+    items: [
+      { id: 'carousel', label: 'Hero Slides', icon: Sliders },
+      { id: 'history', label: 'Parish History', icon: BookOpen },
+      { id: 'gallery', label: 'Photo Gallery', icon: GalleryIcon },
+      { id: 'bulletins', label: 'Weekly Bulletins', icon: FileDown },
+      { id: 'sermons', label: 'Homily reflections', icon: Volume2 },
+    ]
+  },
+  {
+    name: 'Services',
+    items: [
+      { id: 'centers', label: 'Centers (Outstations)', icon: Landmark },
+      { id: 'jumuiyas', label: 'Jumuiyas (SCCs)', icon: Users },
+      { id: 'societies', label: 'Societies Groups', icon: Compass },
+      { id: 'schedules', label: 'Service Schedules', icon: Clock },
+      { id: 'readings', label: 'Bible Readings', icon: BookOpen },
+      { id: 'giving', label: 'Giving Projects', icon: Coins },
+    ]
+  },
+  {
+    name: 'Engagement',
+    items: [
+      { id: 'registrations', label: 'Sacraments Registry', icon: FileText },
+      { id: 'prayers', label: 'Moderation Wall', icon: Heart },
+      { id: 'bookings', label: 'Asset Bookings', icon: Calendar },
+    ]
+  },
+  {
+    name: 'Administration',
+    items: [
+      { id: 'theme', label: 'Theme settings', icon: Sliders },
+      { id: 'admins', label: 'Admin Accounts', icon: ShieldCheck },
+    ]
+  }
+];
 
 export default function AdminPage() {
   const [session, setSession] = useState<any>(null);
@@ -47,6 +87,7 @@ export default function AdminPage() {
     'giving' | 'registrations' | 'bulletins' | 'sermons' | 'bookings' | 'centers' | 'admins'
   >('carousel');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   // Loaded DB data states
   const [slides, setSlides] = useState<any[]>([]);
@@ -794,47 +835,122 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Tabs scroll header */}
-      <div className="flex flex-col space-y-4">
-        <div className="flex border-b border-border overflow-x-auto no-scrollbar pb-1 gap-1">
-          {[
-            { id: 'carousel', label: 'Hero Slides', icon: Sliders },
-            { id: 'centers', label: 'Centers (Outstations)', icon: Landmark },
-            { id: 'jumuiyas', label: 'Jumuiyas (SCCs)', icon: Users },
-            { id: 'societies', label: 'Societies Groups', icon: Compass },
-            { id: 'schedules', label: 'Service Schedules', icon: Clock },
-            { id: 'readings', label: 'Bible Readings', icon: BookOpen },
-            { id: 'giving', label: 'Giving Projects', icon: Coins },
-            { id: 'registrations', label: 'Sacraments Registry', icon: FileText },
-            { id: 'prayers', label: 'Moderation Wall', icon: Heart },
-            { id: 'bulletins', label: 'Weekly Bulletins', icon: FileDown },
-            { id: 'sermons', label: 'Homily reflections', icon: Volume2 },
-            { id: 'bookings', label: 'Asset Bookings', icon: Calendar },
-            { id: 'history', label: 'Parish History', icon: BookOpen },
-            { id: 'gallery', label: 'Photo Gallery', icon: GalleryIcon },
-            { id: 'theme', label: 'Theme settings', icon: Sliders },
-            { id: 'admins', label: 'Admin Accounts', icon: ShieldCheck },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`touch-target px-4 py-2 border-b-2 font-bold text-xs whitespace-nowrap transition-all flex items-center space-x-1.5 ${
-                  activeTab === tab.id
-                    ? 'border-primary text-primary bg-primary/5'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+      {/* Sidebar + Content Layout */}
+      <div className="flex flex-col lg:flex-row gap-8">
+        
+        {/* Desktop Sidebar (Left) */}
+        <aside className="hidden lg:block w-64 shrink-0">
+          <div className="bg-card border border-border rounded-2xl p-4 sticky top-6 space-y-6">
+            {NAVIGATION_CATEGORIES.map((category) => (
+              <div key={category.name} className="space-y-2">
+                <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-wider px-2">
+                  {category.name}
+                </h3>
+                <div className="space-y-1">
+                  {category.items.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`w-full text-left touch-target px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2.5 ${
+                          isActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 text-primary/80" />
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        {/* Mobile Navigation Trigger & Backdrop */}
+        <div className="lg:hidden">
+          <div className="flex items-center justify-between bg-card border border-border px-4 py-3 rounded-2xl shadow-sm">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-semibold text-muted-foreground">Tab:</span>
+              <span className="text-xs font-bold text-primary">
+                {
+                  [...NAVIGATION_CATEGORIES[0].items, ...NAVIGATION_CATEGORIES[1].items, ...NAVIGATION_CATEGORIES[2].items, ...NAVIGATION_CATEGORIES[3].items]
+                    .find(item => item.id === activeTab)?.label || activeTab
+                }
+              </span>
+            </div>
+            <button
+              onClick={() => setIsMobileNavOpen(true)}
+              className="touch-target px-3.5 py-1.5 bg-primary/10 text-primary rounded-xl flex items-center space-x-1.5 hover:bg-primary/20 transition-all active:scale-95"
+            >
+              <Menu className="w-4 h-4" />
+              <span className="text-xs font-bold">Menu</span>
+            </button>
+          </div>
+
+          {/* Mobile Sidebar Menu (Drawer) */}
+          {isMobileNavOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end">
+              <div 
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+                onClick={() => setIsMobileNavOpen(false)}
+              />
+              
+              <div className="relative w-80 max-w-full bg-card border-l border-border h-full flex flex-col p-6 shadow-2xl overflow-y-auto animate-slide-in">
+                <div className="flex items-center justify-between pb-4 border-b border-border mb-6">
+                  <h2 className="text-sm font-extrabold text-foreground">Workspace Menu</h2>
+                  <button 
+                    onClick={() => setIsMobileNavOpen(false)}
+                    className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="flex-1 space-y-6">
+                  {NAVIGATION_CATEGORIES.map((category) => (
+                    <div key={category.name} className="space-y-2">
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">
+                        {category.name}
+                      </h3>
+                      <div className="space-y-1">
+                        {category.items.map((tab) => {
+                          const Icon = tab.icon;
+                          const isActive = activeTab === tab.id;
+                          return (
+                            <button
+                              key={tab.id}
+                              onClick={() => {
+                                setActiveTab(tab.id as any);
+                                setIsMobileNavOpen(false);
+                              }}
+                              className={`w-full text-left touch-target px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2.5 ${
+                                isActive
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                              }`}
+                            >
+                              <Icon className="w-4 h-4 text-primary/80" />
+                              <span>{tab.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Tab Layout Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Content Area (Right) */}
+        <div className="flex-1 min-w-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Form column (Left) */}
           <div className="lg:col-span-1 bg-card border border-border p-6 rounded-2xl shadow-sm h-fit space-y-4">
@@ -1446,5 +1562,6 @@ export default function AdminPage() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
