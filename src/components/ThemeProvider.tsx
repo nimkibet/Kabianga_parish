@@ -1,8 +1,17 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getLiturgicalSeason } from '@/lib/liturgicalSeason';
+
+interface DbTheme {
+  primary_color: string;
+  secondary_color: string;
+  background_color: string;
+  foreground_color: string;
+  start_month: number;
+  end_month: number;
+}
 
 /**
  * ThemeProvider fetches the appropriate theme settings from Supabase, or
@@ -11,73 +20,110 @@ import { getLiturgicalSeason } from '@/lib/liturgicalSeason';
  * It also supports a user bypass to default back to a clean default white theme.
  */
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
+  const [themeStyles, setThemeStyles] = useState<string>('');
 
+  const applyTheme = useCallback(async () => {
+    const isBypassed = localStorage.getItem('theme_bypass') === 'true';
 
-    const applyTheme = async () => {
-      const isBypassed = localStorage.getItem('theme_bypass') === 'true';
-      const root = document.documentElement;
-      const setVar = (name: string, value: string) => root.style.setProperty(name, value);
-
-      if (isBypassed) {
-        // Apply Clean Default Light Mode (White background, standard purple primary)
-        setVar('--color-primary', '#7c3aed');
-        setVar('--color-primary-hover', '#6d28d9');
-        setVar('--color-on-primary', '#ffffff');
-        setVar('--color-background', '#ffffff');
-        setVar('--color-foreground', '#1e1b4b');
-        setVar('--background', '#ffffff');
-        setVar('--foreground', '#1e1b4b');
-        setVar('--card', '#ffffff');
-        setVar('--card-foreground', '#1e1b4b');
-        setVar('--muted', '#f3e8ff');
-        setVar('--muted-foreground', '#6b21a8');
-        setVar('--border', '#ddd6fe');
-        return;
-      }
-
-      const month = new Date().getMonth() + 1; // 1-12
-
-      try {
-        const { data, error } = await supabase.from('theme_settings').select('*');
-        
-        if (!error && data && data.length > 0) {
-          const active = data.find((t: any) => {
-            const start = t.start_month;
-            const end = t.end_month;
-            if (start <= end) {
-              return month >= start && month <= end;
-            }
-            return month >= start || month <= end;
-          });
-
-          if (active) {
-            setVar('--color-primary', active.primary_color);
-            setVar('--color-primary-hover', active.secondary_color);
-            setVar('--color-on-primary', active.foreground_color);
-            setVar('--color-background', active.background_color);
-            setVar('--color-foreground', active.foreground_color);
-            setVar('--background', active.background_color);
-            setVar('--foreground', active.foreground_color);
-            return;
-          }
-        }
-      } catch (dbErr) {
-        console.warn('Failed to query Supabase themes:', dbErr);
-      }
-
-      // Fallback local Liturgical engine
-      const { theme } = getLiturgicalSeason();
-      setVar('--color-primary', theme.primary);
-      setVar('--color-primary-hover', theme.primaryHover);
-      setVar('--color-on-primary', '#ffffff');
-      setVar('--color-background', theme.background);
-      setVar('--color-foreground', theme.foreground);
-      setVar('--background', theme.background);
-      setVar('--foreground', theme.foreground);
+    // Helper to generate CSS variables stylesheet
+    const generateStyles = (vars: Record<string, string>) => {
+      const declarations = Object.entries(vars)
+        .map(([name, val]) => `${name}: ${val} !important;`)
+        .join('\n  ');
+      return `:root {\n  ${declarations}\n}`;
     };
 
-    applyTheme();
+    if (isBypassed) {
+      // Apply Clean Default Light Mode (White background, standard purple primary)
+      const styles = generateStyles({
+        '--color-primary': '#7c3aed',
+        '--color-primary-hover': '#6d28d9',
+        '--color-on-primary': '#ffffff',
+        '--color-background': '#ffffff',
+        '--color-foreground': '#1e1b4b',
+        '--background': '#ffffff',
+        '--foreground': '#1e1b4b',
+        '--card': '#ffffff',
+        '--card-foreground': '#1e1b4b',
+        '--color-card': '#ffffff',
+        '--color-card-foreground': '#1e1b4b',
+        '--muted': '#f3e8ff',
+        '--color-muted': '#f3e8ff',
+        '--muted-foreground': '#6b21a8',
+        '--color-muted-foreground': '#6b21a8',
+        '--border': '#ddd6fe',
+        '--color-border': '#ddd6fe',
+      });
+      setThemeStyles(styles);
+      return;
+    }
+
+    const month = new Date().getMonth() + 1; // 1-12
+
+    try {
+      const { data, error } = await supabase.from('theme_settings').select('*');
+      
+      if (!error && data && data.length > 0) {
+        const active = (data as DbTheme[]).find((t) => {
+          const start = t.start_month;
+          const end = t.end_month;
+          if (start <= end) {
+            return month >= start && month <= end;
+          }
+          return month >= start || month <= end;
+        });
+
+        if (active) {
+          const styles = generateStyles({
+            '--color-primary': active.primary_color,
+            '--color-primary-hover': active.secondary_color,
+            '--color-on-primary': active.foreground_color,
+            '--color-background': active.background_color,
+            '--color-foreground': active.foreground_color,
+            '--background': active.background_color,
+            '--foreground': active.foreground_color,
+            // Ensure card and borders also follow the active theme to avoid white overrides
+            '--card': active.background_color,
+            '--color-card': active.background_color,
+            '--card-foreground': active.foreground_color,
+            '--color-card-foreground': active.foreground_color,
+            '--border': active.secondary_color + '20', // subtle transparent primary
+            '--color-border': active.secondary_color + '20',
+          });
+          setThemeStyles(styles);
+          return;
+        }
+      }
+    } catch (dbErr) {
+      console.warn('Failed to query Supabase themes:', dbErr);
+    }
+
+    // Fallback local Liturgical engine
+    const { theme } = getLiturgicalSeason();
+    const styles = generateStyles({
+      '--color-primary': theme.primary,
+      '--color-primary-hover': theme.primaryHover,
+      '--color-on-primary': '#ffffff',
+      '--color-background': theme.background,
+      '--color-foreground': theme.foreground,
+      '--background': theme.background,
+      '--foreground': theme.foreground,
+      // Cascade to card variables to prevent default white cards
+      '--card': theme.background,
+      '--color-card': theme.background,
+      '--card-foreground': theme.foreground,
+      '--color-card-foreground': theme.foreground,
+      '--border': theme.primaryHover + '20',
+      '--color-border': theme.primaryHover + '20',
+    });
+    setThemeStyles(styles);
+  }, []);
+
+  useEffect(() => {
+    // Schedule initial application on next tick to avoid synchronous setState inside render loop
+    const initialTimer = setTimeout(() => {
+      applyTheme();
+    }, 0);
 
     // Listen to custom bypass toggle events
     const handleBypassChange = () => {
@@ -88,10 +134,18 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     const interval = setInterval(applyTheme, 1000 * 60 * 60 * 24);
     
     return () => {
+      clearTimeout(initialTimer);
       window.removeEventListener('theme-bypass-changed', handleBypassChange);
       clearInterval(interval);
     };
-  }, []);
+  }, [applyTheme]);
 
-  return <>{children}</>;
+  return (
+    <>
+      {themeStyles && (
+        <style id="dynamic-theme-overrides" dangerouslySetInnerHTML={{ __html: themeStyles }} />
+      )}
+      {children}
+    </>
+  );
 }
