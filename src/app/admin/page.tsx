@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { parseLegacyReading, formatToLegacyString } from '@/lib/readingsParser';
 import { 
   Lock, 
   Mail, 
@@ -301,7 +302,39 @@ export default function AdminPage() {
       } else if (activeTab === 'readings') {
         const { data, error } = await supabase.from('daily_readings').select('*').order('reading_date', { ascending: false }).limit(20);
         if (error) throw error;
-        setReadings(data || []);
+        
+        // Map raw DB rows to frontend schema properties
+        const mapped = (data || []).map(r => {
+          let liturgicalColor = 'green';
+          let englishReading = r.content_en || '';
+          if (englishReading.startsWith('[color:')) {
+            const colorEnd = englishReading.indexOf(']');
+            liturgicalColor = englishReading.substring(7, colorEnd);
+            englishReading = englishReading.substring(colorEnd + 1).trim();
+          }
+
+          const parsedEn = parseLegacyReading(englishReading);
+          const parsedSw = parseLegacyReading(r.content_sw || '');
+
+          return {
+            id: r.id,
+            reading_date: r.reading_date,
+            english_reading: englishReading,
+            swahili_reading: r.content_sw || '',
+            english_verse: r.title_en || '',
+            swahili_verse: r.title_sw || '',
+            first_reading_en: parsedEn.firstReading,
+            first_reading_sw: parsedSw.firstReading,
+            second_reading_en: parsedEn.secondReading,
+            second_reading_sw: parsedSw.secondReading,
+            psalm_en: parsedEn.psalm,
+            psalm_sw: parsedSw.psalm,
+            gospel_en: parsedEn.gospel,
+            gospel_sw: parsedSw.gospel,
+            liturgical_color: liturgicalColor
+          };
+        });
+        setReadings(mapped);
       } else if (activeTab === 'admins') {
         const { data, error } = await supabase.from('administrators').select('*').order('created_at', { ascending: false });
         if (error) throw error;
@@ -561,21 +594,45 @@ export default function AdminPage() {
   const handleAddReading = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let engText = readEngText;
+      let swaText = readSwaText;
+
+      // If structured input fields are filled, combine them into formatted text blocks
+      if (firstReadingEn || psalmEn || gospelEn) {
+        engText = formatToLegacyString({
+          firstReading: firstReadingEn,
+          firstReadingVerse: 'First Reading',
+          secondReading: secondReadingEn,
+          secondReadingVerse: 'Second Reading',
+          psalm: psalmEn,
+          psalmVerse: 'Responsorial Psalm',
+          gospel: gospelEn,
+          gospelVerse: 'Gospel'
+        });
+      }
+
+      if (firstReadingSw || psalmSw || gospelSw) {
+        swaText = formatToLegacyString({
+          firstReading: firstReadingSw,
+          firstReadingVerse: 'Somo la Kwanza',
+          secondReading: secondReadingSw,
+          secondReadingVerse: 'Somo la Pili',
+          psalm: psalmSw,
+          psalmVerse: 'Zaburi ya Kujibu',
+          gospel: gospelSw,
+          gospelVerse: 'Injili'
+        });
+      }
+
+      // Prepend Liturgical Color as metadata to content_en
+      const contentEnWithColor = `[color:${readLiturgicalColor}]\n${engText}`;
+
       const readingData = {
         reading_date: readDate,
-        english_reading: readEngText,
-        swahili_reading: readSwaText,
-        english_verse: readEngVerse,
-        swahili_verse: readSwaVerse,
-        first_reading_en: firstReadingEn,
-        first_reading_sw: firstReadingSw,
-        second_reading_en: secondReadingEn,
-        second_reading_sw: secondReadingSw,
-        psalm_en: psalmEn,
-        psalm_sw: psalmSw,
-        gospel_en: gospelEn,
-        gospel_sw: gospelSw,
-        liturgical_color: readLiturgicalColor
+        title_en: readEngVerse,
+        content_en: contentEnWithColor,
+        title_sw: readSwaVerse,
+        content_sw: swaText
       };
 
       if (editingReading) {

@@ -296,9 +296,19 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
     swahiliVerse = 'Masomo ya Misa';
   }
   
-  // Save/cache the record in Supabase
-  const newRecord: any = {
-    reading_date: targetDateStr, // Use correct database column
+  // Save/cache the record in Supabase using the exact remote database schema
+  const contentEnWithColor = `[color:${parsedEn.liturgicalColor || 'green'}]\n${englishReading}`;
+  
+  const toInsert = {
+    reading_date: targetDateStr,
+    title_en: englishVerse,
+    content_en: contentEnWithColor,
+    title_sw: swahiliVerse,
+    content_sw: swahiliReading
+  };
+  
+  const formattedRecord = {
+    reading_date: targetDateStr,
     english_reading: englishReading,
     swahili_reading: swahiliReading,
     english_verse: englishVerse,
@@ -313,43 +323,22 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
     gospel_sw: parsedSw.gospel,
     liturgical_color: parsedEn.liturgicalColor || 'green'
   };
-  
-  let toInsert = { ...newRecord };
-  let { data: insertedData, error: insertError } = await supabase
+
+  const { data: insertedData, error: insertError } = await supabase
     .from('daily_readings')
     .insert(toInsert)
     .select()
     .single();
     
   if (insertError) {
-    if (insertError.message.includes('column') && (insertError.message.includes('does not exist') || insertError.message.includes('not found'))) {
-      console.log('[Readings Cache] Missing schema columns on remote database. Falling back to base table schema.');
-      toInsert = {
-        reading_date: targetDateStr,
-        english_reading: englishReading,
-        swahili_reading: swahiliReading,
-        english_verse: englishVerse,
-        swahili_verse: swahiliVerse
-      };
-      
-      const { data: retryData, error: retryError } = await supabase
-        .from('daily_readings')
-        .insert(toInsert)
-        .select()
-        .single();
-        
-      if (retryError) {
-        console.warn(`Failed to cache daily reading for ${targetDateStr} (retry):`, retryError.message);
-        return toInsert;
-      }
-      return retryData;
-    } else {
-      console.warn(`Failed to cache daily reading for ${targetDateStr} in Supabase:`, insertError.message);
-      return newRecord;
-    }
+    console.warn(`Failed to cache daily reading for ${targetDateStr} in Supabase:`, insertError.message);
+    return formattedRecord;
   }
   
-  return insertedData;
+  return {
+    ...formattedRecord,
+    id: insertedData.id
+  };
 }
 
 // Background worker to preload readings for the next 7 days
@@ -413,6 +402,37 @@ export async function GET(request: NextRequest) {
     }
       
     if (cachedReading) {
+      // Decode liturgical color and clean content
+      let liturgicalColor = 'green';
+      let englishReading = cachedReading.content_en || '';
+      if (englishReading.startsWith('[color:')) {
+        const colorEnd = englishReading.indexOf(']');
+        liturgicalColor = englishReading.substring(7, colorEnd);
+        englishReading = englishReading.substring(colorEnd + 1).trim();
+      }
+
+      // Parse structured sections
+      const parsedEn = parseLegacyReading(englishReading);
+      const parsedSw = parseLegacyReading(cachedReading.content_sw || '');
+
+      const formattedReading = {
+        id: cachedReading.id,
+        reading_date: cachedReading.reading_date,
+        english_reading: englishReading,
+        swahili_reading: cachedReading.content_sw || '',
+        english_verse: cachedReading.title_en || '',
+        swahili_verse: cachedReading.title_sw || '',
+        first_reading_en: parsedEn.firstReading,
+        first_reading_sw: parsedSw.firstReading,
+        second_reading_en: parsedEn.secondReading,
+        second_reading_sw: parsedSw.secondReading,
+        psalm_en: parsedEn.psalm,
+        psalm_sw: parsedSw.psalm,
+        gospel_en: parsedEn.gospel,
+        gospel_sw: parsedSw.gospel,
+        liturgical_color: liturgicalColor
+      };
+
       // OPTIMIZATION: Check if the day + 7 reading is already cached.
       // If it is, we don't trigger the background preload worker.
       const future7Obj = new Date(targetDateObj.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -437,7 +457,7 @@ export async function GET(request: NextRequest) {
         }, 0);
       }
       
-      return NextResponse.json({ success: true, cached: true, data: cachedReading });
+      return NextResponse.json({ success: true, cached: true, data: formattedReading });
     }
     
     // 2. Not cached: scrape on-demand
