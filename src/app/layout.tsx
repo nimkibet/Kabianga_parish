@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ThemeProvider from '@/components/ThemeProvider';
 import Navbar from "@/components/Navbar";
+import { getLiturgicalSeason } from '@/lib/liturgicalSeason';
 
 export const metadata: Metadata = {
   title: {
@@ -67,6 +68,26 @@ export default function RootLayout({
     "url": "https://kabiangaparish.org",
   };
 
+  // Calculate the server-side liturgical fallback styles to prevent a background flash of white
+  const { theme } = getLiturgicalSeason();
+  const initialStyles = `
+    :root {
+      --color-primary: ${theme.primary} !important;
+      --color-primary-hover: ${theme.primaryHover} !important;
+      --color-on-primary: #ffffff !important;
+      --color-background: ${theme.background} !important;
+      --color-foreground: ${theme.foreground} !important;
+      --background: ${theme.background} !important;
+      --foreground: ${theme.foreground} !important;
+      --card: ${theme.background} !important;
+      --color-card: ${theme.background} !important;
+      --card-foreground: ${theme.foreground} !important;
+      --color-card-foreground: ${theme.foreground} !important;
+      --border: ${theme.primaryHover}20 !important;
+      --color-border: ${theme.primaryHover}20 !important;
+    }
+  `;
+
   return (
     <html lang="en" className="h-full scroll-smooth">
       <head>
@@ -76,6 +97,7 @@ export default function RootLayout({
             __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
           }}
         />
+        <style id="initial-liturgical-theme" dangerouslySetInnerHTML={{ __html: initialStyles }} />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground pb-20 md:pb-0">
         <ThemeProvider>
