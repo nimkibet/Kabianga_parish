@@ -25,7 +25,8 @@ import {
   Volume2,
   Check,
   X,
-  Landmark
+  Landmark,
+  ShieldCheck
 } from 'lucide-react';
 import CloudinaryUploadWidget from '@/components/CloudinaryUploadWidget';
 
@@ -43,7 +44,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<
     'carousel' | 'history' | 'gallery' | 'theme' | 'schedules' | 
     'readings' | 'jumuiyas' | 'societies' | 'prayers' | 
-    'giving' | 'registrations' | 'bulletins' | 'sermons' | 'bookings' | 'centers'
+    'giving' | 'registrations' | 'bulletins' | 'sermons' | 'bookings' | 'centers' | 'admins'
   >('carousel');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -63,7 +64,15 @@ export default function AdminPage() {
   const [sermons, setSermons] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [centers, setCenters] = useState<any[]>([]);
+  const [administrators, setAdministrators] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
+
+  // Administrators invite form inputs
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminRole, setNewAdminRole] = useState('admin');
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   // Form Inputs State
   // Carousel Form
@@ -108,6 +117,7 @@ export default function AdminPage() {
   const [readSwaText, setReadSwaText] = useState('');
   const [ocrImageUrl, setOcrImageUrl] = useState('');
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [preloadLoading, setPreloadLoading] = useState(false);
 
   // Jumuiya Form
   const [jName, setJName] = useState('');
@@ -208,9 +218,13 @@ export default function AdminPage() {
         if (error) throw error;
         setSchedules(data || []);
       } else if (activeTab === 'readings') {
-        const { data, error } = await supabase.from('daily_readings').select('*').order('date', { ascending: false }).limit(20);
+        const { data, error } = await supabase.from('daily_readings').select('*').order('reading_date', { ascending: false }).limit(20);
         if (error) throw error;
         setReadings(data || []);
+      } else if (activeTab === 'admins') {
+        const { data, error } = await supabase.from('administrators').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        setAdministrators(data || []);
       } else if (activeTab === 'jumuiyas') {
         const { data, error } = await supabase.from('jumuiyas').select('*').order('name', { ascending: true });
         // Fetch centers for linking dropdown
@@ -359,7 +373,7 @@ export default function AdminPage() {
     e.preventDefault();
     try {
       const { error } = await supabase.from('daily_readings').insert({
-        date: readDate, english_reading: readEngText, swahili_reading: readSwaText,
+        reading_date: readDate, english_reading: readEngText, swahili_reading: readSwaText,
         english_verse: readEngVerse, swahili_verse: readSwaVerse
       });
       if (error) throw error;
@@ -367,6 +381,48 @@ export default function AdminPage() {
       setReadDate(''); setReadEngVerse(''); setReadEngText(''); setReadSwaVerse(''); setReadSwaText(''); setOcrImageUrl('');
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const handleInviteAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminEmail || !newAdminPassword || !newAdminName) {
+      return showNotification('error', 'All fields are required.');
+    }
+    setInviteLoading(true);
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const token = currentSession?.access_token;
+      
+      const res = await fetch('/api/admin/invite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          email: newAdminEmail,
+          password: newAdminPassword,
+          name: newAdminName,
+          role: newAdminRole
+        })
+      });
+      
+      const resJson = await res.json();
+      if (!res.ok) {
+        throw new Error(resJson.message || 'Invitation failed');
+      }
+      
+      showNotification('success', resJson.message || 'Administrator added successfully!');
+      setNewAdminEmail('');
+      setNewAdminPassword('');
+      setNewAdminName('');
+      setNewAdminRole('admin');
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message || 'Failed to add administrator');
+    } finally {
+      setInviteLoading(false);
+    }
   };
 
   const runOcrExtractor = async () => {
@@ -387,6 +443,33 @@ export default function AdminPage() {
       showNotification('error', `OCR Error: ${err.message}`);
     } finally {
       setOcrLoading(false);
+    }
+  };
+
+  const handlePreloadReadings = async () => {
+    setPreloadLoading(true);
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const token = currentSession?.access_token;
+      
+      const res = await fetch('/api/readings/preload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const resJson = await res.json();
+      if (!res.ok) {
+        throw new Error(resJson.message || 'Preload failed');
+      }
+      
+      showNotification('success', 'Mass readings for the next 7 days have been successfully preloaded & cached!');
+      fetchData();
+    } catch (err: any) {
+      showNotification('error', err.message || 'Failed to preload readings');
+    } finally {
+      setPreloadLoading(false);
     }
   };
 
@@ -675,6 +758,7 @@ export default function AdminPage() {
             { id: 'history', label: 'Parish History', icon: BookOpen },
             { id: 'gallery', label: 'Photo Gallery', icon: GalleryIcon },
             { id: 'theme', label: 'Theme settings', icon: Sliders },
+            { id: 'admins', label: 'Admin Accounts', icon: ShieldCheck },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -841,29 +925,47 @@ export default function AdminPage() {
 
             {/* BIBLE READINGS */}
             {activeTab === 'readings' && (
-              <form onSubmit={handleAddReading} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">Daily Scriptures</h2>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Date</label><input type="date" required value={readDate} onChange={e => setReadDate(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="bg-muted/40 p-3 rounded-xl border border-border space-y-2">
-                  <label className="text-[10px] font-bold text-accent uppercase tracking-wider block">Scripture OCR Text Extractor</label>
-                  {ocrImageUrl ? (
-                    <div className="space-y-2">
-                      <div className="relative aspect-video rounded border overflow-hidden bg-black/10"><img src={ocrImageUrl} className="object-cover w-full h-full" /></div>
-                      <button type="button" onClick={runOcrExtractor} disabled={ocrLoading} className="w-full py-2 bg-accent text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1">
-                        {ocrLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : null}
-                        <span>Extract & Auto-Fill Swahili</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <CloudinaryUploadWidget onUploadSuccess={setOcrImageUrl} buttonText="Upload Reading screenshot" className="w-full bg-accent hover:bg-emerald-600 text-xs py-2" />
-                  )}
+              <div className="space-y-6">
+                <form onSubmit={handleAddReading} className="space-y-4">
+                  <h2 className="text-base font-bold text-foreground border-b pb-2">Daily Scriptures</h2>
+                  <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Date</label><input type="date" required value={readDate} onChange={e => setReadDate(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                  <div className="bg-muted/40 p-3 rounded-xl border border-border space-y-2">
+                    <label className="text-[10px] font-bold text-accent uppercase tracking-wider block">Scripture OCR Text Extractor</label>
+                    {ocrImageUrl ? (
+                      <div className="space-y-2">
+                        <div className="relative aspect-video rounded border overflow-hidden bg-black/10"><img src={ocrImageUrl} className="object-cover w-full h-full" /></div>
+                        <button type="button" onClick={runOcrExtractor} disabled={ocrLoading} className="w-full py-2 bg-accent text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1">
+                          {ocrLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : null}
+                          <span>Extract & Auto-Fill Swahili</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <CloudinaryUploadWidget onUploadSuccess={setOcrImageUrl} buttonText="Upload Reading screenshot" className="w-full bg-accent hover:bg-emerald-600 text-xs py-2" />
+                    )}
+                  </div>
+                  <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Verse Title</label><input type="text" required placeholder="John 3:16" value={readEngVerse} onChange={e => setReadEngVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                  <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Reading Content</label><textarea rows={3} required placeholder="Full scripture text..." value={readEngText} onChange={e => setReadEngText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                  <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Verse Title</label><input type="text" required placeholder="Yohana 3:16" value={readSwaVerse} onChange={e => setReadSwaVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                  <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Reading Content</label><textarea rows={3} required placeholder="Maandiko ya Kiswahili..." value={readSwaText} onChange={e => setReadSwaText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                  <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Readings</button>
+                </form>
+
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 space-y-3">
+                  <h3 className="text-xs font-extrabold text-primary uppercase tracking-wide">Automated Preloading</h3>
+                  <p className="text-[11px] text-muted-foreground leading-normal">
+                    Pull and cache mass scriptures (both English & Kiswahili) for the next 7 days in advance. This prevents on-demand scraping when parishioners access the site.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handlePreloadReadings}
+                    disabled={preloadLoading}
+                    className="w-full touch-target py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 transition-all shadow-sm active:scale-[0.98]"
+                  >
+                    {preloadLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                    <span>Preload & Cache Next 7 Days</span>
+                  </button>
                 </div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Verse Title</label><input type="text" required placeholder="John 3:16" value={readEngVerse} onChange={e => setReadEngVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Reading Content</label><textarea rows={3} required placeholder="Full scripture text..." value={readEngText} onChange={e => setReadEngText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Verse Title</label><input type="text" required placeholder="Yohana 3:16" value={readSwaVerse} onChange={e => setReadSwaVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Reading Content</label><textarea rows={3} required placeholder="Maandiko ya Kiswahili..." value={readSwaText} onChange={e => setReadSwaText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Readings</button>
-              </form>
+              </div>
             )}
 
             {/* GIVING PROJECT FORM */}
@@ -917,6 +1019,28 @@ export default function AdminPage() {
                 </div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Date</label><input type="date" value={sermDate} onChange={e => setSermDate(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Homily</button>
+              </form>
+            )}
+
+            {/* ADMINISTRATOR REGISTRATION FORM */}
+            {activeTab === 'admins' && (
+              <form onSubmit={handleInviteAdmin} className="space-y-4">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">Invite New Administrator</h2>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Admin Full Name</label><input type="text" required placeholder="John Doe" value={newAdminName} onChange={e => setNewAdminName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Admin Email Address</label><input type="email" required placeholder="admin2@kabiangaparish.org" value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Access Password</label><input type="password" required placeholder="••••••••" value={newAdminPassword} onChange={e => setNewAdminPassword(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted-foreground">Role</label>
+                  <select value={newAdminRole} onChange={e => setNewAdminRole(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm">
+                    <option value="admin">Administrator</option>
+                    <option value="moderator">Moderator</option>
+                    <option value="editor">Editor</option>
+                  </select>
+                </div>
+                <button type="submit" disabled={inviteLoading} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5">
+                  {inviteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  <span>Register Administrator</span>
+                </button>
               </form>
             )}
 
@@ -1033,7 +1157,7 @@ export default function AdminPage() {
                 {readings.map(r => (
                   <div key={r.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                     <div>
-                      <h4 className="font-extrabold text-sm text-foreground">{r.date}</h4>
+                      <h4 className="font-extrabold text-sm text-foreground">{r.reading_date}</h4>
                       <p className="text-xs text-muted-foreground mt-0.5">Eng: {r.english_verse} • Swa: {r.swahili_verse}</p>
                     </div>
                     <button onClick={() => handleDelete('daily_readings', r.id)} className="px-3 py-1.5 bg-destructive/10 text-destructive text-xs font-bold rounded-lg shrink-0">Delete</button>
@@ -1221,6 +1345,28 @@ export default function AdminPage() {
                       <p className="text-xs text-muted-foreground mt-2">Months: {t.start_month} to {t.end_month}</p>
                     </div>
                     <button onClick={() => handleDelete('theme_settings', t.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Remove Theme</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ADMINISTRATORS LIST */}
+            {activeTab === 'admins' && (
+              <div className="space-y-3">
+                {administrators.map(admin => (
+                  <div key={admin.id} className="flex justify-between items-center p-4 border rounded-2xl bg-card shadow-sm">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="font-extrabold text-sm text-foreground">{admin.name}</h3>
+                        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary">{admin.role}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{admin.email}</p>
+                    </div>
+                    {session?.user?.email !== admin.email ? (
+                      <button onClick={() => handleDelete('administrators', admin.id)} className="px-3 py-1.5 bg-destructive/10 text-destructive text-xs font-bold rounded-lg shrink-0">Remove Admin</button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic font-semibold px-2">Current Session</span>
+                    )}
                   </div>
                 ))}
               </div>
