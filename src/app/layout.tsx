@@ -59,8 +59,24 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Kabianga Parish",
+    "alternateName": ["Catholic Parish of Kabianga", "Kabianga Catholic Church"],
+    "url": "https://kabiangaparish.org",
+  };
+
   return (
     <html lang="en" className="h-full scroll-smooth">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c'),
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground pb-20 md:pb-0">
         <ThemeProvider>
           <Navbar />
