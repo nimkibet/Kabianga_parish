@@ -168,6 +168,7 @@ export default function AdminPage() {
   const [treasPhone, setTreasPhone] = useState('');
   const [centerImageUrl, setCenterImageUrl] = useState('');
   const [centerImages, setCenterImages] = useState<string[]>([]);
+  const [editingCenter, setEditingCenter] = useState<any>(null);
 
   // Track session
   useEffect(() => {
@@ -567,17 +568,71 @@ export default function AdminPage() {
     ].filter(l => l.name.trim()); // Only keep filled roles
 
     try {
-      const { error } = await supabase.from('centers').insert({
-        name: cName,
-        description: cDesc,
-        leaders: leadersList,
-        images: centerImages
-      });
-      if (error) throw error;
-      showNotification('success', 'Outstation Center added!');
+      if (editingCenter) {
+        const { error } = await supabase
+          .from('centers')
+          .update({
+            name: cName,
+            description: cDesc,
+            leaders: leadersList,
+            images: centerImages
+          })
+          .eq('id', editingCenter.id);
+          
+        if (error) throw error;
+        showNotification('success', 'Outstation Center updated successfully!');
+      } else {
+        const { error } = await supabase.from('centers').insert({
+          name: cName,
+          description: cDesc,
+          leaders: leadersList,
+          images: centerImages
+        });
+        if (error) throw error;
+        showNotification('success', 'Outstation Center added!');
+      }
+      
       setCName(''); setCDesc(''); setCatName(''); setCatPhone(''); setChairName(''); setChairPhone(''); setSecName(''); setSecPhone(''); setTreasName(''); setTreasPhone(''); setCenterImages([]);
+      setEditingCenter(null);
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const loadCenterForEdit = (center: any) => {
+    setEditingCenter(center);
+    setCName(center.name);
+    setCDesc(center.description || '');
+    
+    setCatName(''); setCatPhone('');
+    setChairName(''); setChairPhone('');
+    setSecName(''); setSecPhone('');
+    setTreasName(''); setTreasPhone('');
+    
+    if (center.leaders && Array.isArray(center.leaders)) {
+      center.leaders.forEach((l: any) => {
+        if (l.role === 'Catechist') {
+          setCatName(l.name || '');
+          setCatPhone(l.phone || '');
+        } else if (l.role === 'Chairman') {
+          setChairName(l.name || '');
+          setChairPhone(l.phone || '');
+        } else if (l.role === 'Secretary') {
+          setSecName(l.name || '');
+          setSecPhone(l.phone || '');
+        } else if (l.role === 'Treasurer') {
+          setTreasName(l.name || '');
+          setTreasPhone(l.phone || '');
+        }
+      });
+    }
+    
+    setCenterImages(center.images || []);
+    setCenterImageUrl('');
+  };
+
+  const handleCancelCenterEdit = () => {
+    setCName(''); setCDesc(''); setCatName(''); setCatPhone(''); setChairName(''); setChairPhone(''); setSecName(''); setSecPhone(''); setTreasName(''); setTreasPhone(''); setCenterImages([]);
+    setEditingCenter(null);
   };
 
   const handleAddCenterImage = () => {
@@ -811,7 +866,9 @@ export default function AdminPage() {
             {/* OUTSTATION CENTER FORM */}
             {activeTab === 'centers' && (
               <form onSubmit={handleAddCenter} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">New Outstation Center</h2>
+                <h2 className="text-base font-bold text-foreground border-b pb-2">
+                  {editingCenter ? 'Edit Outstation Center' : 'New Outstation Center'}
+                </h2>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground">Center Name</label>
                   <input type="text" required placeholder="St. Augustine Kiptere" value={cName} onChange={e => setCName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
@@ -851,7 +908,16 @@ export default function AdminPage() {
                   )}
                 </div>
 
-                <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Outstation Center</button>
+                <div className="flex gap-2">
+                  {editingCenter && (
+                    <button type="button" onClick={handleCancelCenterEdit} className="flex-1 py-2 bg-muted hover:bg-border text-foreground text-xs font-bold rounded-xl">
+                      Cancel
+                    </button>
+                  )}
+                  <button type="submit" className="flex-1 py-2 bg-primary text-white text-xs font-bold rounded-xl">
+                    {editingCenter ? 'Save Changes' : 'Save Outstation Center'}
+                  </button>
+                </div>
               </form>
             )}
 
@@ -1092,7 +1158,10 @@ export default function AdminPage() {
                         </div>
                       )}
                     </div>
-                    <button onClick={() => handleDelete('centers', c.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Remove Center</button>
+                    <div className="flex gap-2">
+                      <button onClick={() => loadCenterForEdit(c)} className="flex-1 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold rounded-lg transition-all">Edit Details</button>
+                      <button onClick={() => handleDelete('centers', c.id)} className="flex-1 py-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 text-xs font-bold rounded-lg transition-all">Remove</button>
+                    </div>
                   </div>
                 ))}
               </div>
