@@ -178,10 +178,10 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
 
     const titleLower = title.toLowerCase();
     if (titleLower.includes('somo la 1') || titleLower.includes('somo la kwanza')) {
-      firstReading = content;
+      firstReading = content + '\n\nNeno la Bwana.\nTumshukuru Mungu.';
       firstReadingVerse = verse;
     } else if (titleLower.includes('somo la 2') || titleLower.includes('somo la pili')) {
-      secondReading = content;
+      secondReading = content + '\n\nNeno la Bwana.\nTumshukuru Mungu.';
       secondReadingVerse = verse;
     } else if (
       titleLower.includes('wimbo wa katikati') ||
@@ -198,7 +198,7 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
       alleluia = content;
       alleluiaVerse = verse;
     } else if (titleLower.includes('injili')) {
-      gospel = content;
+      gospel = content + '\n\nNeno la Bwana.\nSifa Kwako Ee Kristu.';
       gospelVerse = verse;
     }
   }
@@ -220,15 +220,15 @@ export function parseSwahiliReadings(html: string): Omit<ParsedReadings, 'liturg
 
         const titleLower = title.toLowerCase();
         if (titleLower.includes('somo la 1') || titleLower.includes('somo la kwanza')) {
-          firstReading = content; firstReadingVerse = verse;
+          firstReading = content + '\n\nNeno la Bwana.\nTumshukuru Mungu.'; firstReadingVerse = verse;
         } else if (titleLower.includes('somo la 2') || titleLower.includes('somo la pili')) {
-          secondReading = content; secondReadingVerse = verse;
+          secondReading = content + '\n\nNeno la Bwana.\nTumshukuru Mungu.'; secondReadingVerse = verse;
         } else if (titleLower.includes('wimbo wa katikati') || titleLower.includes('wimbo') || titleLower.includes('zaburi')) {
           psalm = content; psalmVerse = verse;
         } else if (titleLower.includes('shangilio') || titleLower.includes('aleluya')) {
           alleluia = content; alleluiaVerse = verse;
         } else if (titleLower.includes('injili')) {
-          gospel = content; gospelVerse = verse;
+          gospel = content + '\n\nNeno la Bwana.\nSifa Kwako Ee Kristu.'; gospelVerse = verse;
         }
       }
     }
