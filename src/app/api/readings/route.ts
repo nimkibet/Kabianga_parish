@@ -2,64 +2,105 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { parseUSCCBMarkdown, parseSwahiliReadings, parseLegacyReading, formatToLegacyString } from '@/lib/readingsParser';
 
-function cleanHtml(html: string): string {
-  if (!html) return '';
-  return html
-    .replace(/<[^>]*>/g, '') // remove HTML tags
-    .replace(/&#8216;/g, '‘')
-    .replace(/&#8217;/g, '’')
-    .replace(/&#8220;/g, '“')
-    .replace(/&#8221;/g, '”')
-    .replace(/&#8211;/g, '–')
-    .replace(/&#8212;/g, '—')
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&#8216;/g, '\u2018')
+    .replace(/&#8217;/g, '\u2019')
+    .replace(/&#8220;/g, '\u201C')
+    .replace(/&#8221;/g, '\u201D')
+    .replace(/&#8211;/g, '\u2013')
+    .replace(/&#8212;/g, '\u2014')
     .replace(/&#8230;/g, '...')
     .replace(/&#160;/g, ' ')
     .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ') // normalize whitespace
-    .trim();
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"');
 }
 
-function parseUniversalisHtml(html: string): { verse: string; text: string } {
-  const textsIndex = html.indexOf('<div id="texts">');
-  if (textsIndex === -1) return { verse: '', text: '' };
-  
-  const textsHtml = html.substring(textsIndex);
-  const parts = textsHtml.split('<hr class="shortrule"/>');
-  
-  let resultText = '';
-  let firstReadingVerse = '';
-  let gospelVerse = '';
-  
-  for (const part of parts) {
-    const headerMatch = part.match(/<th align="left">(.*?)<\/th>/i);
-    const verseMatch = part.match(/<th align="right">(.*?)<\/th>/i);
-    
-    if (headerMatch && verseMatch) {
-      const header = cleanHtml(headerMatch[1]);
-      const verse = cleanHtml(verseMatch[1]);
-      
-      if (header.toLowerCase().includes('first reading')) {
-        firstReadingVerse = verse;
-      } else if (header.toLowerCase().includes('gospel') && !header.toLowerCase().includes('acclamation')) {
-        gospelVerse = verse;
-      }
-      
-      resultText += `\n\n=== ${header} (${verse}) ===\n`;
-    }
-    
-    // Match paragraphs and verses
-    const divs = part.match(/<div class="(p|v|vi|gb)">(.*?)<\/div>/gi) || [];
-    for (const div of divs) {
-      const content = div.replace(/<[^>]*>/g, '');
-      resultText += cleanHtml(content) + '\n';
+/**
+ * Parses Universalis mass HTML into fully structured English readings.
+ * Returns clean text with no links, copyright, or page furniture.
+ */
+function parseUniversalisStructured(html: string): {
+  firstReading: string; firstReadingVerse: string;
+  secondReading: string; secondReadingVerse: string;
+  psalm: string; psalmVerse: string;
+  alleluia: string; alleluiaVerse: string;
+  gospel: string; gospelVerse: string;
+  liturgicalColor: string;
+} {
+  const empty = { firstReading: '', firstReadingVerse: '', secondReading: '', secondReadingVerse: '',
+    psalm: '', psalmVerse: '', alleluia: '', alleluiaVerse: '', gospel: '', gospelVerse: '', liturgicalColor: 'green' };
+
+  // Find texts div only — everything inside it is readings, nothing else
+  const textsStart = html.indexOf('id="texts"');
+  const textsEnd   = html.indexOf('<div id="footer"', textsStart);
+  if (textsStart === -1) return empty;
+  const textsHtml = html.substring(textsStart, textsEnd > 0 ? textsEnd : undefined);
+
+  // Determine liturgical color from surrounding HTML cues
+  const htmlLower = html.toLowerCase();
+  let liturgicalColor = 'green';
+  if (htmlLower.includes('ordinary time')) liturgicalColor = 'green';
+  else if (htmlLower.includes('lent') || htmlLower.includes('advent')) liturgicalColor = 'purple';
+  else if (htmlLower.includes('easter') || htmlLower.includes('christmas') || htmlLower.includes('solemnity')) liturgicalColor = 'white';
+  else if (htmlLower.includes('martyr') || htmlLower.includes('passion sunday')) liturgicalColor = 'red';
+
+  // Split by section dividers
+  const sections = textsHtml.split('<hr class="shortrule"/>');
+
+  // Helper: clean a section's div content into readable plain text.
+  // Skips copyright notices, attribution lines, and other boilerplate.
+  const SKIP_PATTERNS = /copyright|universalis|scripture readings from|hodder|grail|lectionary for mass|roman missal|icel|all rights reserved|used with permission/i;
+  const extractContent = (sectionHtml: string): string => {
+    const divs = [...sectionHtml.matchAll(/<div class="(p|v|vi|gb|sp)">(.*?)<\/div>/gi)];
+    return divs
+      .map(m => decodeHtmlEntities(m[2].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()))
+      .filter(t => t.length > 0 && !SKIP_PATTERNS.test(t))
+      .join('\n');
+  };
+
+  const cleanTh = (html: string) =>
+    decodeHtmlEntities(html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim());
+
+  let firstReading = '', firstReadingVerse = '';
+  let secondReading = '', secondReadingVerse = '';
+  let psalm = '', psalmVerse = '';
+  let alleluia = '', alleluiaVerse = '';
+  let gospel = '', gospelVerse = '';
+
+  for (const section of sections) {
+    const leftMatch  = section.match(/<th align="left">(.*?)<\/th>/i);
+    const rightMatch = section.match(/<th align="right">(.*?)<\/th>/i);
+    if (!leftMatch) continue;
+
+    const header = cleanTh(leftMatch[1]).toLowerCase();
+    const verse  = rightMatch ? cleanTh(rightMatch[1]) : '';
+    const content = extractContent(section);
+    if (!content) continue;
+
+    if (header.includes('first reading') || header === 'reading') {
+      firstReading = content + '\n\nThe word of the Lord.\nThanks be to God.';
+      firstReadingVerse = verse;
+    } else if (header.includes('second reading')) {
+      secondReading = content + '\n\nThe word of the Lord.\nThanks be to God.';
+      secondReadingVerse = verse;
+    } else if (header.includes('psalm')) {
+      psalm = content;
+      psalmVerse = verse;
+    } else if (header.includes('acclamation') || header.includes('alleluia') || header.includes('sequence')) {
+      alleluia = content;
+      alleluiaVerse = verse;
+    } else if (header.includes('gospel') && !header.includes('acclamation')) {
+      gospel = content + '\n\nThe Gospel of the Lord.\nPraise to you, Lord Jesus Christ.';
+      gospelVerse = verse;
     }
   }
-  
-  const englishVerse = firstReadingVerse && gospelVerse 
-    ? `${firstReadingVerse} & ${gospelVerse}` 
-    : firstReadingVerse || gospelVerse || 'Daily Mass Readings';
-    
-  return { verse: englishVerse, text: resultText.trim() };
+
+  return { firstReading, firstReadingVerse, secondReading, secondReadingVerse,
+    psalm, psalmVerse, alleluia, alleluiaVerse, gospel, gospelVerse, liturgicalColor };
 }
 
 function constructSwahiliUrl(date: Date): string {
@@ -112,60 +153,6 @@ function getSwahiliUrl(html: string, date: Date): string | null {
   return null;
 }
 
-function parseSwahiliHtml(html: string): { verse: string; text: string } {
-  const regex = /<span class="reading_title">([\s\S]*?)<\/span>\s*<h3 class="reading">([\s\S]*?)<\/h3>\s*<p[^>]*>([\s\S]*?)<\/p>/gi;
-  
-  let match;
-  let resultText = '';
-  let firstReadingVerse = '';
-  let gospelVerse = '';
-  
-  while ((match = regex.exec(html)) !== null) {
-    const title = cleanHtml(match[1]);
-    const verse = cleanHtml(match[2]);
-    const content = cleanHtml(match[3]);
-    
-    if (title.toLowerCase().includes('somo la 1') || title.toLowerCase().includes('somo la kwanza')) {
-      firstReadingVerse = verse;
-    } else if (title.toLowerCase().includes('injili')) {
-      gospelVerse = verse;
-    }
-    
-    resultText += `\n\n=== ${title} (${verse}) ===\n${content}\n`;
-  }
-  
-  // Backup parser in case of structure drift
-  if (!resultText) {
-    const divRegex = /<div class="readings">([\s\S]*?)<\/div>/gi;
-    let divMatch;
-    while ((divMatch = divRegex.exec(html)) !== null) {
-      const innerHtml = divMatch[1];
-      const titleMatch = innerHtml.match(/<span class="reading_title">([\s\S]*?)<\/span>/i);
-      const verseMatch = innerHtml.match(/<h3 class="reading">([\s\S]*?)<\/h3>/i);
-      const pMatch = innerHtml.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-      
-      if (titleMatch && verseMatch && pMatch) {
-        const title = cleanHtml(titleMatch[1]);
-        const verse = cleanHtml(verseMatch[1]);
-        const content = cleanHtml(pMatch[1]);
-        
-        if (title.toLowerCase().includes('somo la 1') || title.toLowerCase().includes('somo la kwanza')) {
-          firstReadingVerse = verse;
-        } else if (title.toLowerCase().includes('injili')) {
-          gospelVerse = verse;
-        }
-        
-        resultText += `\n\n=== ${title} (${verse}) ===\n${content}\n`;
-      }
-    }
-  }
-  
-  const swahiliVerse = firstReadingVerse && gospelVerse 
-    ? `${firstReadingVerse} na ${gospelVerse}` 
-    : firstReadingVerse || gospelVerse || 'Masomo ya Misa';
-    
-  return { verse: swahiliVerse, text: resultText.trim() };
-}
 
 // Helper to fetch and cache a reading for a specific date
 export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date) {
@@ -173,57 +160,33 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
   const month = String(targetDateObj.getUTCMonth() + 1).padStart(2, '0');
   const day = String(targetDateObj.getUTCDate()).padStart(2, '0');
 
-  // 1. Scrape English readings
+  // 1. Scrape English readings — Universalis is primary (USCCB blocks server-side requests)
   let englishVerse = 'Daily Mass Readings';
   let englishReading = '';
-  let parsedEn: any = { firstReading: '', firstReadingVerse: '', secondReading: '', secondReadingVerse: '', psalm: '', psalmVerse: '', gospel: '', gospelVerse: '', liturgicalColor: 'green' };
+  let parsedEn: any = { firstReading: '', firstReadingVerse: '', secondReading: '', secondReadingVerse: '',
+    psalm: '', psalmVerse: '', alleluia: '', alleluiaVerse: '', gospel: '', gospelVerse: '', liturgicalColor: 'green' };
 
-  // Try USCCB Markdown (highly reliable)
   try {
-    const MM = String(targetDateObj.getUTCMonth() + 1).padStart(2, '0');
-    const DD = String(targetDateObj.getUTCDate()).padStart(2, '0');
-    const YY = String(targetDateObj.getUTCFullYear() % 100).padStart(2, '0');
-    const usccbUrl = `https://bible.usccb.org/bible/readings/${MM}${DD}${YY}.cfm.md`;
-    
-    console.log(`[Readings Scraper] Fetching USCCB readings in Markdown: ${usccbUrl}`);
-    const response = await fetch(usccbUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+    const dateFormatted = `${year}${month}${day}`;
+    const universalisUrl = `https://universalis.com/${dateFormatted}/mass.htm`;
+    console.log(`[Readings Scraper] Fetching English readings from Universalis: ${universalisUrl}`);
+
+    const response = await fetch(universalisUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36' }
     });
 
     if (response.ok) {
-      const md = await response.text();
-      parsedEn = parseUSCCBMarkdown(md);
+      const html = await response.text();
+      parsedEn = parseUniversalisStructured(html);
       englishReading = formatToLegacyString(parsedEn);
       englishVerse = parsedEn.firstReadingVerse && parsedEn.gospelVerse
         ? `${parsedEn.firstReadingVerse} & ${parsedEn.gospelVerse}`
         : parsedEn.firstReadingVerse || parsedEn.gospelVerse || 'Daily Mass Readings';
+    } else {
+      console.warn(`[Readings Scraper] Universalis returned ${response.status}`);
     }
   } catch (err: any) {
-    console.warn('[Readings Scraper] USCCB fetch failed, trying Universalis fallback:', err.message);
-    
-    // Universalis HTML fallback
-    try {
-      const dateFormattedYYYYMMDD = `${year}${month}${day}`;
-      const universalisUrl = `https://universalis.com/${dateFormattedYYYYMMDD}/mass.htm`;
-      const response = await fetch(universalisUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
-      });
-      if (response.ok) {
-        const html = await response.text();
-        const parsed = parseUniversalisHtml(html);
-        if (parsed.text) {
-          englishReading = parsed.text;
-          englishVerse = parsed.verse;
-          const legacyParsed = parseLegacyReading(englishReading);
-          parsedEn = {
-            ...legacyParsed,
-            liturgicalColor: html.toLowerCase().includes('ordinary time') ? 'green' : html.toLowerCase().includes('lent') || html.toLowerCase().includes('advent') ? 'purple' : 'white'
-          };
-        }
-      }
-    } catch (engErr: any) {
-      console.error('Failed to scrape English readings from Universalis:', engErr.message);
-    }
+    console.error('[Readings Scraper] Failed to fetch English readings from Universalis:', err.message);
   }
 
   // 2. Scrape Swahili readings from Mkatoliki Leo
