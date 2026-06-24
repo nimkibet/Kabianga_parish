@@ -52,13 +52,21 @@ function parseUniversalisStructured(html: string): {
   const sections = textsHtml.split('<hr class="shortrule"/>');
 
   // Helper: clean a section's div content into readable plain text.
-  // Skips copyright notices, attribution lines, and other boilerplate.
+  // Matches ALL Universalis content div variants: p, pi, v, vi, gb, sp, "p gb", "v gb", etc.
+  // Skips audioclip, copyright notices, attribution lines, and other boilerplate.
+  const CONTENT_DIV = /^(p|pi|v|vi|gb|sp)(\s|$)/i; // class starts with a content prefix
   const SKIP_PATTERNS = /copyright|universalis|scripture readings from|hodder|grail|lectionary for mass|roman missal|icel|all rights reserved|used with permission/i;
   const extractContent = (sectionHtml: string): string => {
-    const divs = [...sectionHtml.matchAll(/<div class="(p|v|vi|gb|sp)">(.*?)<\/div>/gi)];
+    // Match every <div class="..."> ... </div> (non-greedy, single-line safe via [\s\S])
+    const divs = [...sectionHtml.matchAll(/<div class="([^"]+)">([\s\S]*?)<\/div>/gi)];
     return divs
-      .map(m => decodeHtmlEntities(m[2].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()))
-      .filter(t => t.length > 0 && !SKIP_PATTERNS.test(t))
+      .filter(m => CONTENT_DIV.test(m[1]))          // only reading-content classes
+      .map(m => decodeHtmlEntities(
+        m[2].replace(/<[^>]*>/g, '')                 // strip inner tags (e.g. <a>, <em>)
+            .replace(/\s+/g, ' ')
+            .trim()
+      ))
+      .filter(t => t.length > 0 && !SKIP_PATTERNS.test(t))  // drop empty / boilerplate
       .join('\n');
   };
 
