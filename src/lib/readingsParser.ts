@@ -80,12 +80,12 @@ export function parseUSCCBMarkdown(md: string): ParsedReadings {
     }
     
     const contentText = textLines.join('\n').trim();
-    
-    if (header.includes('reading 1') || header.includes('reading i') || header.startsWith('reading\n')) {
-      firstReading = contentText;
+
+    if (header.includes('reading 1') || header.includes('reading i') || header.startsWith('reading')) {
+      firstReading = contentText + '\n\nThe word of the Lord.\nThanks be to God.';
       firstReadingVerse = verse || 'Reading I';
     } else if (header.includes('reading 2') || header.includes('reading ii')) {
-      secondReading = contentText;
+      secondReading = contentText + '\n\nThe word of the Lord.\nThanks be to God.';
       secondReadingVerse = verse || 'Reading II';
     } else if (header.includes('responsorial psalm') || header.includes('psalm')) {
       psalm = contentText;
@@ -94,7 +94,7 @@ export function parseUSCCBMarkdown(md: string): ParsedReadings {
       alleluia = contentText;
       alleluiaVerse = verse || 'Alleluia';
     } else if (header.includes('gospel')) {
-      gospel = contentText;
+      gospel = contentText + '\n\nThe Gospel of the Lord.\nPraise to you, Lord Jesus Christ.';
       gospelVerse = verse || 'Gospel';
     }
   }

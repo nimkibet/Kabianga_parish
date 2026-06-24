@@ -1142,50 +1142,53 @@ export default function AdminPage() {
           </div>
         </aside>
 
-        {/* Mobile Navigation Trigger & Backdrop */}
+        {/* Mobile Navigation — collapsed by default; floating trigger button */}
         <div className="lg:hidden">
-          <div className="flex items-center justify-between bg-card border border-border px-4 py-3 rounded-2xl shadow-sm">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-semibold text-muted-foreground">Tab:</span>
-              <span className="text-xs font-bold text-primary">
-                {
-                  [...NAVIGATION_CATEGORIES[0].items, ...NAVIGATION_CATEGORIES[1].items, ...NAVIGATION_CATEGORIES[2].items, ...NAVIGATION_CATEGORIES[3].items]
-                    .find(item => item.id === activeTab)?.label || activeTab
-                }
+          {/* Floating hamburger pill — always accessible, minimal footprint */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs text-muted-foreground font-semibold">
+              Section: <span className="text-primary font-bold">
+                {[...NAVIGATION_CATEGORIES[0].items, ...NAVIGATION_CATEGORIES[1].items, ...NAVIGATION_CATEGORIES[2].items, ...NAVIGATION_CATEGORIES[3].items]
+                  .find(item => item.id === activeTab)?.label || activeTab}
               </span>
-            </div>
+            </span>
             <button
               onClick={() => setIsMobileNavOpen(true)}
-              className="touch-target px-3.5 py-1.5 bg-primary/10 text-primary rounded-xl flex items-center space-x-1.5 hover:bg-primary/20 transition-all active:scale-95"
+              aria-label="Open navigation menu"
+              aria-expanded={isMobileNavOpen}
+              className="touch-target flex items-center space-x-1.5 px-3 py-1.5 bg-primary text-white rounded-xl text-xs font-bold shadow-md shadow-primary/30 hover:bg-primary-hover active:scale-95 transition-all"
             >
               <Menu className="w-4 h-4" />
-              <span className="text-xs font-bold">Menu</span>
+              <span>Navigate</span>
             </button>
           </div>
 
-          {/* Mobile Sidebar Menu (Drawer) */}
+          {/* Slide-in Drawer — only rendered when open */}
           {isMobileNavOpen && (
             <div className="fixed inset-0 z-50 flex justify-end">
-              <div 
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                 onClick={() => setIsMobileNavOpen(false)}
               />
-              
-              <div className="relative w-80 max-w-full bg-card border-l border-border h-full flex flex-col p-6 shadow-2xl overflow-y-auto animate-slide-in">
+
+              {/* Drawer panel */}
+              <div className="relative w-80 max-w-[85vw] bg-card border-l border-border h-full flex flex-col p-6 shadow-2xl overflow-y-auto animate-slide-in">
                 <div className="flex items-center justify-between pb-4 border-b border-border mb-6">
-                  <h2 className="text-sm font-extrabold text-foreground">Workspace Menu</h2>
-                  <button 
+                  <h2 className="text-sm font-extrabold text-foreground">Admin Workspace</h2>
+                  <button
                     onClick={() => setIsMobileNavOpen(false)}
-                    className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground"
+                    className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Close menu"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                
+
                 <div className="flex-1 space-y-6">
                   {NAVIGATION_CATEGORIES.map((category) => (
                     <div key={category.name} className="space-y-2">
-                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">
+                      <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-wider px-2">
                         {category.name}
                       </h3>
                       <div className="space-y-1">
