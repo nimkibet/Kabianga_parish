@@ -123,6 +123,7 @@ export default function AdminPage() {
   const [newAuthPassword, setNewAuthPassword] = useState('');
   const [authUsersLoading, setAuthUsersLoading] = useState(false);
   const [authCreateLoading, setAuthCreateLoading] = useState(false);
+  const [authUsersError, setAuthUsersError] = useState('');
 
   // Form Inputs State
   // Carousel Form
@@ -750,6 +751,7 @@ export default function AdminPage() {
 
   const fetchAuthUsers = async () => {
     setAuthUsersLoading(true);
+    setAuthUsersError('');
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       const token = currentSession?.access_token;
@@ -764,6 +766,7 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(resJson.message || 'Failed to fetch auth users');
       setAuthUsers(resJson.users || []);
     } catch (err: any) {
+      setAuthUsersError(err.message || 'Could not load auth users');
       showNotification('error', err.message || 'Could not load auth users');
     } finally {
       setAuthUsersLoading(false);
@@ -2180,6 +2183,11 @@ export default function AdminPage() {
                   <div className="flex flex-col items-center py-8 space-y-2">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     <p className="text-xs text-muted-foreground">Loading accounts from Supabase...</p>
+                  </div>
+                ) : authUsersError ? (
+                  <div className="p-4 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive text-xs font-semibold flex items-center space-x-2 animate-fade-in">
+                    <AlertTriangle className="w-4.5 h-4.5 shrink-0" />
+                    <span>Error: {authUsersError}</span>
                   </div>
                 ) : authUsers.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-8">No registered users in Supabase Auth.</p>
