@@ -1,32 +1,35 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
-import { Download, FileText, Loader2, Calendar } from 'lucide-react';
+import { Download, FileText, Calendar } from 'lucide-react';
 
-export default function Bulletins() {
-  const [bulletins, setBulletins] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export const dynamic = 'force-dynamic';
 
-  useEffect(() => {
-    fetchBulletins();
-  }, []);
+export const metadata: Metadata = {
+  title: 'Weekly Bulletins',
+  description: 'Download weekly announcement documents, church programs, and liturgical readings from our digital bulletin archive.',
+  alternates: {
+    canonical: 'https://kabiangaparish.vercel.app/bulletins',
+  },
+  openGraph: {
+    siteName: 'Kabianga Catholic Parish',
+    title: 'Weekly Bulletins',
+    url: 'https://kabiangaparish.vercel.app/bulletins',
+  },
+};
 
-  const fetchBulletins = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('bulletin_archives')
-        .select('*')
-        .order('publish_date', { ascending: false });
+export default async function Bulletins() {
+  let bulletins: any[] = [];
+  try {
+    const { data, error } = await supabase
+      .from('bulletin_archives')
+      .select('*')
+      .order('publish_date', { ascending: false });
 
-      if (error) throw error;
-      setBulletins(data || []);
-    } catch (err: any) {
-      console.error('Error fetching bulletins:', err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (error) throw error;
+    bulletins = data || [];
+  } catch (err: any) {
+    console.error('Error fetching bulletins:', err.message);
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 px-1 pb-16">
@@ -41,12 +44,7 @@ export default function Bulletins() {
       </div>
 
       {/* Bulletins List */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 space-y-3">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-xs text-muted-foreground font-semibold">Loading bulletin archives...</p>
-        </div>
-      ) : bulletins.length === 0 ? (
+      {bulletins.length === 0 ? (
         <div className="text-center py-16 bg-card border border-border rounded-2xl">
           <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
           <h3 className="font-extrabold text-sm text-foreground">No Bulletins Available</h3>

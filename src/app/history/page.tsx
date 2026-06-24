@@ -5,6 +5,14 @@ import { BookOpen, Calendar, MapPin } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Church History',
   description: 'Learn about the rich history and heritage of Kabianga Parish, from early missionary foundations to our growth as a parish.',
+  alternates: {
+    canonical: 'https://kabiangaparish.vercel.app/history',
+  },
+  openGraph: {
+    siteName: 'Kabianga Catholic Parish',
+    title: 'Church History',
+    url: 'https://kabiangaparish.vercel.app/history',
+  },
 };
 
 interface HistoryEntry {

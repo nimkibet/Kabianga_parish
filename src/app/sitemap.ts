@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://kabiangaparish.org';
+  const baseUrl = 'https://kabiangaparish.vercel.app';
 
   const routes = [
     '',

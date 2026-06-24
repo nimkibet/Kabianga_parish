@@ -7,12 +7,12 @@ import { getLiturgicalSeason } from '@/lib/liturgicalSeason';
 export const metadata: Metadata = {
   title: {
     template: "%s | Kabianga Catholic Parish",
-    default: "Kabianga Catholic Parish - Welcome to Our Church Community",
+    default: "Kabianga Catholic Parish",
   },
   verification: {
     google: "FGFcghGjaq4hXdgLmVup6F6WKz40EieegAoGv-ezzzg",
   },
-  description: "Welcome to Kabianga Catholic Parish, a vibrant Catholic community under the Kericho Diocese. Join us for Sunday Mass services, confessions, fellowship, and community outreach in Kabianga.",
+  description: "Welcome to Kabianga Catholic Parish - St. John Paul II Parish, Diocese of Kericho.",
   keywords: [
     "kabianga",
     "kabianga parish",
@@ -33,12 +33,12 @@ export const metadata: Metadata = {
     "belgut constituency catholic church"
   ],
   alternates: {
-    canonical: "https://kabiangaparish.org",
+    canonical: "https://kabiangaparish.vercel.app/",
   },
   openGraph: {
-    title: "Kabianga Catholic Parish - Catholic Diocese of Kericho",
-    description: "Welcome to Kabianga Catholic Parish, a vibrant Catholic community under the Kericho Diocese. Join us for Sunday Mass, confessions, and community fellowship.",
-    url: "https://kabiangaparish.org",
+    title: "Kabianga Catholic Parish",
+    description: "Welcome to Kabianga Catholic Parish - St. John Paul II Parish, Diocese of Kericho.",
+    url: "https://kabiangaparish.vercel.app/",
     siteName: "Kabianga Catholic Parish",
     locale: "en_US",
     type: "website",
@@ -66,7 +66,7 @@ export default function RootLayout({
     "@type": "WebSite",
     "name": "Kabianga Catholic Parish",
     "alternateName": ["Catholic Parish of Kabianga", "Kabianga Catholic Church"],
-    "url": "https://kabiangaparish.org",
+    "url": "https://kabiangaparish.vercel.app/",
   };
 
   // Calculate the server-side liturgical fallback styles to prevent a background flash of white
