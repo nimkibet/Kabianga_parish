@@ -1237,8 +1237,8 @@ export default function AdminPage() {
 
         {/* Mobile Navigation — collapsed by default; floating trigger button */}
         <div className="lg:hidden">
-          {/* Floating hamburger pill — always accessible, minimal footprint */}
-          <div className="flex items-center justify-between mb-4">
+          {/* Sticky top bar */}
+          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md py-3 px-4 sm:px-6 -mx-4 sm:-mx-6 border-b border-border/80 flex items-center justify-between mb-6 shadow-sm">
             <span className="text-xs text-muted-foreground font-semibold">
               Section: <span className="text-primary font-bold">
                 {[...NAVIGATION_CATEGORIES[0].items, ...NAVIGATION_CATEGORIES[1].items, ...NAVIGATION_CATEGORIES[2].items, ...NAVIGATION_CATEGORIES[3].items]
@@ -2197,29 +2197,31 @@ export default function AdminPage() {
                         {editingPasswordUserId === user.id && (
                           <form onSubmit={handleUpdatePassword} className="p-3 bg-muted/30 border border-border/50 rounded-xl space-y-2 max-w-sm animate-slide-in">
                             <label className="text-[10px] font-bold text-muted-foreground uppercase">Change Password</label>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col gap-2">
                               <input
                                 type="password"
                                 required
-                                placeholder="New password (min 6 characters)"
+                                placeholder="New password (min 6 chars)"
                                 value={newPasswordValue}
                                 onChange={e => setNewPasswordValue(e.target.value)}
-                                className="px-2 py-1 border rounded-lg bg-background text-xs flex-1 focus:ring-1 focus:ring-primary focus:outline-none"
+                                className="w-full px-2.5 py-1.5 border rounded-lg bg-background text-xs focus:ring-1 focus:ring-primary focus:outline-none"
                               />
-                              <button
-                                type="submit"
-                                disabled={passwordChangeLoading}
-                                className="px-3 py-1 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 touch-target"
-                              >
-                                {passwordChangeLoading ? 'Saving...' : 'Save'}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditingPasswordUserId(null)}
-                                className="px-2 py-1 bg-muted hover:bg-muted/80 text-foreground text-xs font-bold rounded-lg transition-colors touch-target"
-                              >
-                                Cancel
-                              </button>
+                              <div className="flex gap-2 justify-end">
+                                <button
+                                  type="submit"
+                                  disabled={passwordChangeLoading}
+                                  className="flex-1 sm:flex-none px-3 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 touch-target"
+                                >
+                                  {passwordChangeLoading ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingPasswordUserId(null)}
+                                  className="flex-1 sm:flex-none px-3 py-1.5 bg-muted hover:bg-muted/80 text-foreground text-xs font-bold rounded-lg transition-colors touch-target"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
                           </form>
                         )}
