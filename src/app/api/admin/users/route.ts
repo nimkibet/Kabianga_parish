@@ -31,7 +31,7 @@ async function verifyAdmin(request: NextRequest, adminClient: any) {
   return callerProfile;
 }
 
-// 1. GET: List all users in Supabase Auth
+// 1. GET: List all users in Supabase Auth + their public administrator profiles
 export async function GET(request: NextRequest) {
   if (!supabaseUrl || !serviceRoleKey) {
     return NextResponse.json({ success: false, message: 'Server configuration error' }, { status: 500 });
@@ -44,10 +44,19 @@ export async function GET(request: NextRequest) {
   try {
     await verifyAdmin(request, adminClient);
 
-    const { data, error } = await adminClient.auth.admin.listUsers();
-    if (error) throw error;
+    const { data: authData, error: authError } = await adminClient.auth.admin.listUsers();
+    if (authError) throw authError;
 
-    return NextResponse.json({ success: true, users: data.users || [] });
+    const { data: dbAdmins, error: dbError } = await adminClient
+      .from('administrators')
+      .select('*');
+    if (dbError) throw dbError;
+
+    return NextResponse.json({ 
+      success: true, 
+      users: authData.users || [],
+      profiles: dbAdmins || []
+    });
   } catch (err: any) {
     console.error('[Admin List Users API Error]:', err.message);
     const status = err.message.includes('Access denied') || err.message.includes('Unauthorized') ? 403 : 400;
@@ -55,7 +64,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// 2. POST: Create a raw Auth User directly in Supabase Auth
+// 2. POST: Create a user account in Supabase Auth AND public.administrators
 export async function POST(request: NextRequest) {
   if (!supabaseUrl || !serviceRoleKey) {
     return NextResponse.json({ success: false, message: 'Server configuration error' }, { status: 500 });
@@ -68,24 +77,40 @@ export async function POST(request: NextRequest) {
   try {
     await verifyAdmin(request, adminClient);
 
-    const { email, password, emailConfirm } = await request.json();
-    if (!email || !password) {
-      return NextResponse.json({ success: false, message: 'Email and password are required' }, { status: 400 });
+    const { email, password, name, role } = await request.json();
+    if (!email || !password || !name) {
+      return NextResponse.json({ success: false, message: 'Name, email and password are required' }, { status: 400 });
     }
 
-    console.log(`[Admin User Creation] Creating raw user ${email} in Supabase Auth...`);
-    const { data, error } = await adminClient.auth.admin.createUser({
+    console.log(`[Admin User Creation] Creating user ${email} in Supabase Auth...`);
+    const { data, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true
     });
 
-    if (error) throw error;
+    if (createError) throw createError;
+
+    console.log(`[Admin User Creation] Creating profile row for ${email} in administrators table...`);
+    const { error: profileError } = await adminClient
+      .from('administrators')
+      .insert({
+        id: data.user.id,
+        email,
+        name,
+        role: role || 'admin'
+      });
+
+    if (profileError) {
+      console.error(`[Admin User Creation] Failed to insert profile for ${email}:`, profileError.message);
+      // Clean up the created auth user if profile creation fails
+      await adminClient.auth.admin.deleteUser(data.user.id);
+      throw profileError;
+    }
 
     return NextResponse.json({ 
       success: true, 
-      message: `User account (${email}) created successfully in Supabase Auth!`,
-      user: data.user
+      message: `Account for ${name} (${email}) created successfully!`
     });
   } catch (err: any) {
     console.error('[Admin Create User API Error]:', err.message);
@@ -94,7 +119,44 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 3. DELETE: Delete a user from Supabase Auth
+// 3. PATCH: Update password for a user in Supabase Auth
+export async function PATCH(request: NextRequest) {
+  if (!supabaseUrl || !serviceRoleKey) {
+    return NextResponse.json({ success: false, message: 'Server configuration error' }, { status: 500 });
+  }
+
+  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
+
+  try {
+    await verifyAdmin(request, adminClient);
+
+    const { userId, password } = await request.json();
+    if (!userId || !password) {
+      return NextResponse.json({ success: false, message: 'User ID and password are required' }, { status: 400 });
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json({ success: false, message: 'Password must be at least 6 characters long' }, { status: 400 });
+    }
+
+    console.log(`[Admin Update Password] Updating password for user ${userId}...`);
+    const { error } = await adminClient.auth.admin.updateUserById(userId, {
+      password: password
+    });
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, message: 'Password updated successfully!' });
+  } catch (err: any) {
+    console.error('[Admin Update Password API Error]:', err.message);
+    const status = err.message.includes('Access denied') || err.message.includes('Unauthorized') ? 403 : 400;
+    return NextResponse.json({ success: false, message: err.message }, { status });
+  }
+}
+
+// 4. DELETE: Delete a user from Supabase Auth & public.administrators
 export async function DELETE(request: NextRequest) {
   if (!supabaseUrl || !serviceRoleKey) {
     return NextResponse.json({ success: false, message: 'Server configuration error' }, { status: 500 });
@@ -134,7 +196,7 @@ export async function DELETE(request: NextRequest) {
     const { error } = await adminClient.auth.admin.deleteUser(userId);
     if (error) throw error;
 
-    return NextResponse.json({ success: true, message: 'User account deleted successfully from Supabase Auth!' });
+    return NextResponse.json({ success: true, message: 'User account deleted successfully!' });
   } catch (err: any) {
     console.error('[Admin Delete User API Error]:', err.message);
     const status = err.message.includes('Access denied') || err.message.includes('Unauthorized') ? 403 : 400;

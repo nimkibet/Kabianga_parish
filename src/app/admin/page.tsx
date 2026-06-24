@@ -67,7 +67,6 @@ const NAVIGATION_CATEGORIES = [
     items: [
       { id: 'theme', label: 'Theme settings', icon: Sliders },
       { id: 'admins', label: 'Admin Accounts', icon: ShieldCheck },
-      { id: 'auth-users', label: 'Auth Accounts', icon: Users },
     ]
   }
 ];
@@ -86,7 +85,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<
     'carousel' | 'history' | 'gallery' | 'theme' | 'schedules' | 
     'readings' | 'jumuiyas' | 'societies' | 'prayers' | 
-    'giving' | 'registrations' | 'bulletins' | 'sermons' | 'bookings' | 'centers' | 'admins' | 'auth-users'
+    'giving' | 'registrations' | 'bulletins' | 'sermons' | 'bookings' | 'centers' | 'admins'
   >('carousel');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -119,11 +118,10 @@ export default function AdminPage() {
 
   // Auth Users State
   const [authUsers, setAuthUsers] = useState<any[]>([]);
-  const [newAuthEmail, setNewAuthEmail] = useState('');
-  const [newAuthPassword, setNewAuthPassword] = useState('');
-  const [authUsersLoading, setAuthUsersLoading] = useState(false);
-  const [authCreateLoading, setAuthCreateLoading] = useState(false);
   const [authUsersError, setAuthUsersError] = useState('');
+  const [editingPasswordUserId, setEditingPasswordUserId] = useState<string | null>(null);
+  const [newPasswordValue, setNewPasswordValue] = useState('');
+  const [passwordChangeLoading, setPasswordChangeLoading] = useState(false);
 
   // Form Inputs State
   // Carousel Form
@@ -345,11 +343,7 @@ export default function AdminPage() {
         });
         setReadings(mapped);
       } else if (activeTab === 'admins') {
-        const { data, error } = await supabase.from('administrators').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        setAdministrators(data || []);
-      } else if (activeTab === 'auth-users') {
-        await fetchAuthUsers();
+        await fetchAdminsAndUsers();
       } else if (activeTab === 'jumuiyas') {
         const { data, error } = await supabase.from('jumuiyas').select('*').order('name', { ascending: true });
         // Fetch centers for linking dropdown
@@ -717,7 +711,7 @@ export default function AdminPage() {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       const token = currentSession?.access_token;
       
-      const res = await fetch('/api/admin/invite', {
+      const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -733,24 +727,24 @@ export default function AdminPage() {
       
       const resJson = await res.json();
       if (!res.ok) {
-        throw new Error(resJson.message || 'Invitation failed');
+        throw new Error(resJson.message || 'Creation failed');
       }
       
-      showNotification('success', resJson.message || 'Administrator added successfully!');
+      showNotification('success', resJson.message || 'Account created successfully!');
       setNewAdminEmail('');
       setNewAdminPassword('');
       setNewAdminName('');
       setNewAdminRole('admin');
-      fetchData();
+      fetchAdminsAndUsers();
     } catch (err: any) {
-      showNotification('error', err.message || 'Failed to add administrator');
+      showNotification('error', err.message || 'Failed to create account');
     } finally {
       setInviteLoading(false);
     }
   };
 
-  const fetchAuthUsers = async () => {
-    setAuthUsersLoading(true);
+  const fetchAdminsAndUsers = async () => {
+    setDataLoading(true);
     setAuthUsersError('');
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -763,55 +757,57 @@ export default function AdminPage() {
         }
       });
       const resJson = await res.json();
-      if (!res.ok) throw new Error(resJson.message || 'Failed to fetch auth users');
+      if (!res.ok) throw new Error(resJson.message || 'Failed to fetch administrator accounts');
+      
       setAuthUsers(resJson.users || []);
+      setAdministrators(resJson.profiles || []);
     } catch (err: any) {
-      setAuthUsersError(err.message || 'Could not load auth users');
-      showNotification('error', err.message || 'Could not load auth users');
+      setAuthUsersError(err.message || 'Could not load accounts');
+      showNotification('error', err.message || 'Could not load accounts');
     } finally {
-      setAuthUsersLoading(false);
+      setDataLoading(false);
     }
   };
 
-  const handleCreateAuthUser = async (e: React.FormEvent) => {
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAuthEmail || !newAuthPassword) {
-      return showNotification('error', 'Email and password are required.');
+    if (!editingPasswordUserId || !newPasswordValue) return;
+    if (newPasswordValue.length < 6) {
+      return showNotification('error', 'Password must be at least 6 characters long.');
     }
-    setAuthCreateLoading(true);
+    setPasswordChangeLoading(true);
     try {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       const token = currentSession?.access_token;
-
+      
       const res = await fetch('/api/admin/users', {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          email: newAuthEmail,
-          password: newAuthPassword,
-          emailConfirm: true
+          userId: editingPasswordUserId,
+          password: newPasswordValue
         })
       });
-
+      
       const resJson = await res.json();
-      if (!res.ok) throw new Error(resJson.message || 'Creation failed');
-
-      showNotification('success', resJson.message || 'Auth account created successfully!');
-      setNewAuthEmail('');
-      setNewAuthPassword('');
-      fetchAuthUsers();
+      if (!res.ok) throw new Error(resJson.message || 'Password update failed');
+      
+      showNotification('success', 'Password updated successfully!');
+      setEditingPasswordUserId(null);
+      setNewPasswordValue('');
+      fetchAdminsAndUsers();
     } catch (err: any) {
-      showNotification('error', err.message || 'Failed to create auth user');
+      showNotification('error', err.message || 'Failed to update password');
     } finally {
-      setAuthCreateLoading(false);
+      setPasswordChangeLoading(false);
     }
   };
 
-  const handleDeleteAuthUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this auth account? This will also remove any administrator profiles associated with it.')) {
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to delete the account for ${userEmail}? This will permanently remove it from both Supabase Auth and the administrators profiles.`)) {
       return;
     }
     try {
@@ -828,8 +824,8 @@ export default function AdminPage() {
       const resJson = await res.json();
       if (!res.ok) throw new Error(resJson.message || 'Deletion failed');
 
-      showNotification('success', resJson.message || 'Auth account deleted successfully!');
-      fetchAuthUsers();
+      showNotification('success', 'User account deleted successfully!');
+      fetchAdminsAndUsers();
     } catch (err: any) {
       showNotification('error', err.message || 'Failed to delete user');
     }
@@ -1664,10 +1660,10 @@ export default function AdminPage() {
 
             {/* ADMINISTRATOR REGISTRATION FORM */}
             {activeTab === 'admins' && (
-              <form onSubmit={handleInviteAdmin} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">Invite New Administrator</h2>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Admin Full Name</label><input type="text" required placeholder="John Doe" value={newAdminName} onChange={e => setNewAdminName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Admin Email Address</label><input type="email" required placeholder="admin2@kabiangaparish.org" value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+              <form onSubmit={handleInviteAdmin} className="space-y-4 animate-fade-in">
+                <h2 className="text-base font-bold text-foreground border-b pb-2">Create Admin Account</h2>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Full Name</label><input type="text" required placeholder="John Doe" value={newAdminName} onChange={e => setNewAdminName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Email Address</label><input type="email" required placeholder="admin2@kabiangaparish.org" value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Access Password</label><input type="password" required placeholder="••••••••" value={newAdminPassword} onChange={e => setNewAdminPassword(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground">Role</label>
@@ -1677,22 +1673,9 @@ export default function AdminPage() {
                     <option value="editor">Editor</option>
                   </select>
                 </div>
-                <button type="submit" disabled={inviteLoading} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5">
+                <button type="submit" disabled={inviteLoading} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 active:scale-[0.98] transition-all">
                   {inviteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  <span>Register Administrator</span>
-                </button>
-              </form>
-            )}
-
-            {/* AUTH ACCOUNT CREATION FORM */}
-            {activeTab === 'auth-users' && (
-              <form onSubmit={handleCreateAuthUser} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">Create Auth Account</h2>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Account Email Address</label><input type="email" required placeholder="user@kabiangaparish.org" value={newAuthEmail} onChange={e => setNewAuthEmail(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Account Access Password</label><input type="password" required placeholder="••••••••" value={newAuthPassword} onChange={e => setNewAuthPassword(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <button type="submit" disabled={authCreateLoading} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1.5 animate-fade-in">
-                  {authCreateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  <span>Create Account in Supabase</span>
+                  <span>Create Account</span>
                 </button>
               </form>
             )}
@@ -2157,64 +2140,92 @@ export default function AdminPage() {
             {/* ADMINISTRATORS LIST */}
             {activeTab === 'admins' && (
               <div className="space-y-3">
-                {administrators.map(admin => (
-                  <div key={admin.id} className="flex justify-between items-center p-4 border rounded-2xl bg-card shadow-sm">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-extrabold text-sm text-foreground">{admin.name}</h3>
-                        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary">{admin.role}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{admin.email}</p>
-                    </div>
-                    {session?.user?.email !== admin.email ? (
-                      <button onClick={() => handleDelete('administrators', admin.id)} className="px-3 py-1.5 bg-destructive/10 text-destructive text-xs font-bold rounded-lg shrink-0">Remove Admin</button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic font-semibold px-2">Current Session</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* AUTH USERS LIST */}
-            {activeTab === 'auth-users' && (
-              <div className="space-y-3">
-                {authUsersLoading ? (
-                  <div className="flex flex-col items-center py-8 space-y-2">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                    <p className="text-xs text-muted-foreground">Loading accounts from Supabase...</p>
-                  </div>
-                ) : authUsersError ? (
+                {authUsersError ? (
                   <div className="p-4 rounded-xl border border-destructive/20 bg-destructive/10 text-destructive text-xs font-semibold flex items-center space-x-2 animate-fade-in">
                     <AlertTriangle className="w-4.5 h-4.5 shrink-0" />
                     <span>Error: {authUsersError}</span>
                   </div>
                 ) : authUsers.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-8">No registered users in Supabase Auth.</p>
+                  <p className="text-xs text-muted-foreground text-center py-8">No registered user accounts found.</p>
                 ) : (
-                  authUsers.map(user => (
-                    <div key={user.id} className="flex justify-between items-center p-4 border rounded-2xl bg-card shadow-sm gap-4 animate-fade-in">
-                      <div className="space-y-1 min-w-0">
-                        <h3 className="font-extrabold text-sm text-foreground truncate">{user.email}</h3>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
-                          <span>ID: <code className="bg-muted px-1 py-0.5 rounded font-mono text-[9px]">{user.id}</code></span>
-                          <span>•</span>
-                          <span>Created: {new Date(user.created_at).toLocaleDateString()}</span>
-                          {user.last_sign_in_at && (
-                            <>
+                  authUsers.map(user => {
+                    const profile = administrators.find(p => p.id === user.id);
+                    return (
+                      <div key={user.id} className="p-4 border rounded-2xl bg-card shadow-sm space-y-3 animate-fade-in">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex items-center flex-wrap gap-2">
+                              <h3 className="font-extrabold text-sm text-foreground truncate">{profile ? profile.name : 'No Name'}</h3>
+                              <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary">{profile ? profile.role : 'User'}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] text-muted-foreground">
+                              <span>ID: <code className="bg-muted px-1 py-0.5 rounded font-mono text-[8px]">{user.id}</code></span>
                               <span>•</span>
-                              <span>Last Login: {new Date(user.last_sign_in_at).toLocaleDateString()}</span>
-                            </>
-                          )}
+                              <span>Created: {new Date(user.created_at).toLocaleDateString()}</span>
+                              {user.last_sign_in_at && (
+                                <>
+                                  <span>•</span>
+                                  <span>Last Login: {new Date(user.last_sign_in_at).toLocaleDateString()}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2 shrink-0">
+                            <button
+                              onClick={() => {
+                                if (editingPasswordUserId === user.id) {
+                                  setEditingPasswordUserId(null);
+                                } else {
+                                  setEditingPasswordUserId(user.id);
+                                  setNewPasswordValue('');
+                                }
+                              }}
+                              className="px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg transition-colors touch-target"
+                            >
+                              Password
+                            </button>
+                            {session?.user?.id !== user.id ? (
+                              <button onClick={() => handleDeleteUser(user.id, user.email)} className="px-2.5 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-bold rounded-lg transition-colors touch-target">Delete</button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic font-semibold px-2">Current</span>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Inline Change Password Field */}
+                        {editingPasswordUserId === user.id && (
+                          <form onSubmit={handleUpdatePassword} className="p-3 bg-muted/30 border border-border/50 rounded-xl space-y-2 max-w-sm animate-slide-in">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase">Change Password</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="password"
+                                required
+                                placeholder="New password (min 6 characters)"
+                                value={newPasswordValue}
+                                onChange={e => setNewPasswordValue(e.target.value)}
+                                className="px-2 py-1 border rounded-lg bg-background text-xs flex-1 focus:ring-1 focus:ring-primary focus:outline-none"
+                              />
+                              <button
+                                type="submit"
+                                disabled={passwordChangeLoading}
+                                className="px-3 py-1 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 touch-target"
+                              >
+                                {passwordChangeLoading ? 'Saving...' : 'Save'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingPasswordUserId(null)}
+                                className="px-2 py-1 bg-muted hover:bg-muted/80 text-foreground text-xs font-bold rounded-lg transition-colors touch-target"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        )}
                       </div>
-                      {session?.user?.id !== user.id ? (
-                        <button onClick={() => handleDeleteAuthUser(user.id)} className="px-3 py-1.5 bg-destructive/10 text-destructive text-xs font-bold rounded-lg shrink-0 touch-target">Delete Account</button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic font-semibold px-2 shrink-0">Current Session</span>
-                      )}
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             )}
