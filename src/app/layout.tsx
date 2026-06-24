@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ThemeProvider from '@/components/ThemeProvider';
 import Navbar from "@/components/Navbar";
-import { getLiturgicalSeason } from '@/lib/liturgicalSeason';
 
 export const metadata: Metadata = {
   title: {
@@ -69,23 +68,22 @@ export default function RootLayout({
     "url": "https://kabiangaparish.vercel.app/",
   };
 
-  // Calculate the server-side liturgical fallback styles to prevent a background flash of white
-  const { theme } = getLiturgicalSeason();
+  // Clean Light Mode default fallback styles (white background, purple primary)
   const initialStyles = `
     :root {
-      --color-primary: ${theme.primary} !important;
-      --color-primary-hover: ${theme.primaryHover} !important;
+      --color-primary: #7c3aed !important;
+      --color-primary-hover: #6d28d9 !important;
       --color-on-primary: #ffffff !important;
-      --color-background: ${theme.background} !important;
-      --color-foreground: ${theme.foreground} !important;
-      --background: ${theme.background} !important;
-      --foreground: ${theme.foreground} !important;
-      --card: ${theme.background === '#120c1f' ? '#1d1230' : theme.background} !important;
-      --color-card: ${theme.background === '#120c1f' ? '#1d1230' : theme.background} !important;
-      --card-foreground: ${theme.foreground} !important;
-      --color-card-foreground: ${theme.foreground} !important;
-      --border: ${theme.primaryHover}20 !important;
-      --color-border: ${theme.primaryHover}20 !important;
+      --color-background: #ffffff !important;
+      --color-foreground: #1e1b4b !important;
+      --background: #ffffff !important;
+      --foreground: #1e1b4b !important;
+      --card: #ffffff !important;
+      --color-card: #ffffff !important;
+      --card-foreground: #1e1b4b !important;
+      --color-card-foreground: #1e1b4b !important;
+      --border: #ddd6fe !important;
+      --color-border: #ddd6fe !important;
     }
   `;
 
