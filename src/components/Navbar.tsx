@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, Users, Compass, ShieldCheck, Landmark } from 'lucide-react';
+import { Home, BookOpen, Users, Compass, ShieldCheck, Landmark, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
@@ -33,7 +33,7 @@ export default function Navbar() {
   const mobileNavItems = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Readings', href: '/readings', icon: BookOpen },
-    { name: 'Centers', href: '/centers', icon: Landmark },
+    { name: 'Prayers', href: '/prayers', icon: Sparkles },
     { name: 'Societies', href: '/societies', icon: Compass },
     { name: 'Admin', href: '/admin', icon: ShieldCheck },
   ];
