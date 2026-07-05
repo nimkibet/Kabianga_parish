@@ -223,6 +223,7 @@ export default function AdminPage() {
   const [editingReading, setEditingReading] = useState<any>(null);
   const [editingSchedule, setEditingSchedule] = useState<any>(null);
   const [editingHistory, setEditingHistory] = useState<any>(null);
+  const [editingGallery, setEditingGallery] = useState<any>(null);
 
   // Dynamic Site Settings States
   const [brandingSetting, setBrandingSetting] = useState('Kabianga Catholic Parish');
@@ -442,6 +443,15 @@ export default function AdminPage() {
     await supabase.auth.signOut();
   };
 
+  const scrollToForm = () => {
+    const el = document.getElementById('admin-form-container');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   // Submit methods
   const handleAddSlide = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -477,7 +487,7 @@ export default function AdminPage() {
     setSlideTitle(slide.title);
     setSlideQuote(slide.quote || '');
     setSlideImageUrl(slide.image_url);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToForm();
   };
 
   const handleCancelSlideEdit = () => {
@@ -520,7 +530,7 @@ export default function AdminPage() {
     setHistoryTitle(entry.title);
     setHistoryContent(entry.content);
     setHistoryImageUrl(entry.image_url || '');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToForm();
   };
 
   const handleCancelHistoryEdit = () => {
@@ -557,14 +567,50 @@ export default function AdminPage() {
     if (!galleryImageUrl) return showNotification('error', 'Please upload photo.');
     const cat = galleryCategory === 'Custom' ? galleryCustomCategory : galleryCategory;
     try {
-      const { error } = await supabase.from('gallery_images').insert({
+      const payload = {
         image_url: galleryImageUrl, caption: galleryCaption, category: cat
-      });
-      if (error) throw error;
-      showNotification('success', 'Photo added!');
+      };
+
+      if (editingGallery) {
+        const { error } = await supabase
+          .from('gallery_images')
+          .update(payload)
+          .eq('id', editingGallery.id);
+        if (error) throw error;
+        showNotification('success', 'Photo updated!');
+        setEditingGallery(null);
+      } else {
+        const { error } = await supabase.from('gallery_images').insert(payload);
+        if (error) throw error;
+        showNotification('success', 'Photo added!');
+      }
+
       setGalleryCaption(''); setGalleryImageUrl(''); setGalleryCustomCategory('');
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
+  };
+
+  const loadGalleryForEdit = (img: any) => {
+    setEditingGallery(img);
+    setGalleryImageUrl(img.image_url);
+    setGalleryCaption(img.caption || '');
+    const standardCategories = ['General', 'Mass', 'Sacraments', 'Youth', 'Community', 'Choir', 'Sunday School'];
+    if (standardCategories.includes(img.category)) {
+      setGalleryCategory(img.category);
+      setGalleryCustomCategory('');
+    } else {
+      setGalleryCategory('Custom');
+      setGalleryCustomCategory(img.category || '');
+    }
+    scrollToForm();
+  };
+
+  const handleCancelGalleryEdit = () => {
+    setEditingGallery(null);
+    setGalleryImageUrl('');
+    setGalleryCaption('');
+    setGalleryCustomCategory('');
+    setGalleryCategory('General');
   };
 
   const handleAddTheme = async (e: React.FormEvent) => {
@@ -616,7 +662,7 @@ export default function AdminPage() {
     setSchedEnd(sched.end_time.substring(0, 5));
     setSchedDetails(sched.details || '');
     setSchedType(sched.type);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToForm();
   };
 
   const handleCancelScheduleEdit = () => {
@@ -716,7 +762,7 @@ export default function AdminPage() {
     setGospelSw(r.gospel_sw || '');
     setReadLiturgicalColor(r.liturgical_color || 'green');
     setReadImageUrl(r.image_url || '');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToForm();
   };
 
   const handleCancelReadingEdit = () => {
@@ -1071,7 +1117,7 @@ export default function AdminPage() {
     
     setCenterImages(center.images || []);
     setCenterImageUrl('');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToForm();
   };
 
   const handleCancelCenterEdit = () => {
@@ -1359,7 +1405,7 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Form column (Left) */}
-          <div className="lg:col-span-1 bg-card border border-border p-6 rounded-2xl shadow-sm h-fit space-y-4">
+          <div id="admin-form-container" className="lg:col-span-1 bg-card border border-border p-6 rounded-2xl shadow-sm h-fit space-y-4">
             
             {/* CAROUSEL FORM */}
             {activeTab === 'carousel' && (
@@ -1753,7 +1799,9 @@ export default function AdminPage() {
             {/* GALLERY FORM */}
             {activeTab === 'gallery' && (
               <form onSubmit={handleAddGallery} className="space-y-4">
-                <h2 className="text-base font-bold text-foreground border-b pb-2">New Gallery Photo</h2>
+                <h2 className="text-base font-bold text-foreground border-b pb-2">
+                  {editingGallery ? 'Edit Gallery Photo' : 'New Gallery Photo'}
+                </h2>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-muted-foreground">Upload Photo</label>
                   {galleryImageUrl ? (
@@ -1788,7 +1836,16 @@ export default function AdminPage() {
                     <input type="text" required placeholder="e.g. Choir" value={galleryCustomCategory} onChange={e => setGalleryCustomCategory(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" />
                   </div>
                 )}
-                <button type="submit" disabled={!galleryImageUrl} className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50">Save Photo</button>
+                <div className="flex gap-2">
+                  <button type="submit" disabled={!galleryImageUrl} className="flex-1 py-2 bg-primary text-white text-xs font-bold rounded-xl disabled:opacity-50">
+                    {editingGallery ? 'Update Photo' : 'Save Photo'}
+                  </button>
+                  {editingGallery && (
+                    <button type="button" onClick={handleCancelGalleryEdit} className="px-4 py-2 bg-muted text-foreground text-xs font-bold rounded-xl border border-border/80">
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </form>
             )}
 
@@ -2179,7 +2236,10 @@ export default function AdminPage() {
                     <div className="p-3 space-y-2">
                       <span className="text-[10px] bg-accent/15 text-accent px-2 py-0.5 rounded-full block w-fit font-bold">{img.category}</span>
                       <p className="text-xs text-muted-foreground line-clamp-1">{img.caption || 'No caption'}</p>
-                      <button onClick={() => handleDelete('gallery_images', img.id)} className="w-full py-1 bg-destructive/10 text-destructive text-[10px] font-bold rounded">Delete</button>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => loadGalleryForEdit(img)} className="flex-1 py-1 bg-accent/10 text-accent text-[10px] font-bold rounded hover:bg-accent/20 transition-all">Edit</button>
+                        <button type="button" onClick={() => handleDelete('gallery_images', img.id)} className="flex-1 py-1 bg-destructive/10 text-destructive text-[10px] font-bold rounded hover:bg-destructive/20 transition-all">Delete</button>
+                      </div>
                     </div>
                   </div>
                 ))}
