@@ -165,6 +165,7 @@ export default function AdminPage() {
   const [readSwaVerse, setReadSwaVerse] = useState('');
   const [readSwaText, setReadSwaText] = useState('');
   const [ocrImageUrl, setOcrImageUrl] = useState('');
+  const [readImageUrl, setReadImageUrl] = useState('');
   const [ocrLoading, setOcrLoading] = useState(false);
   const [preloadLoading, setPreloadLoading] = useState(false);
 
@@ -448,6 +449,7 @@ export default function AdminPage() {
     setSlideTitle(slide.title);
     setSlideQuote(slide.quote || '');
     setSlideImageUrl(slide.image_url);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelSlideEdit = () => {
@@ -490,6 +492,7 @@ export default function AdminPage() {
     setHistoryTitle(entry.title);
     setHistoryContent(entry.content);
     setHistoryImageUrl(entry.image_url || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelHistoryEdit = () => {
@@ -585,6 +588,7 @@ export default function AdminPage() {
     setSchedEnd(sched.end_time.substring(0, 5));
     setSchedDetails(sched.details || '');
     setSchedType(sched.type);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelScheduleEdit = () => {
@@ -641,7 +645,8 @@ export default function AdminPage() {
         title_en: readEngVerse,
         content_en: contentEnWithColor,
         title_sw: readSwaVerse,
-        content_sw: swaText
+        content_sw: swaText,
+        image_url: readImageUrl
       };
 
       if (editingReading) {
@@ -661,6 +666,7 @@ export default function AdminPage() {
       setFirstReadingEn(''); setFirstReadingSw(''); setSecondReadingEn(''); setSecondReadingSw('');
       setPsalmEn(''); setPsalmSw(''); setGospelEn(''); setGospelSw(''); setReadLiturgicalColor('green');
       setOcrImageUrl('');
+      setReadImageUrl('');
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
   };
@@ -681,6 +687,8 @@ export default function AdminPage() {
     setGospelEn(r.gospel_en || '');
     setGospelSw(r.gospel_sw || '');
     setReadLiturgicalColor(r.liturgical_color || 'green');
+    setReadImageUrl(r.image_url || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelReadingEdit = () => {
@@ -699,6 +707,8 @@ export default function AdminPage() {
     setGospelEn('');
     setGospelSw('');
     setReadLiturgicalColor('green');
+    setOcrImageUrl('');
+    setReadImageUrl('');
   };
 
   const handleInviteAdmin = async (e: React.FormEvent) => {
@@ -1033,6 +1043,7 @@ export default function AdminPage() {
     
     setCenterImages(center.images || []);
     setCenterImageUrl('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelCenterEdit = () => {
@@ -1516,6 +1527,37 @@ export default function AdminPage() {
                       <CloudinaryUploadWidget onUploadSuccess={setOcrImageUrl} buttonText="Upload Reading screenshot" className="w-full bg-accent hover:bg-emerald-600 text-xs py-2" />
                     )}
                   </div>
+
+                  {/* Snap/Upload Readings page image (direct display for parishioners) */}
+                  <div className="bg-muted/40 p-3 rounded-xl border border-border space-y-2">
+                    <label className="text-[10px] font-bold text-primary uppercase tracking-wider block">
+                      Snap / Upload Missal Page Image (Direct Display)
+                    </label>
+                    {readImageUrl ? (
+                      <div className="space-y-2">
+                        <div className="relative aspect-video rounded border overflow-hidden bg-black/10">
+                          <img src={readImageUrl} className="object-contain w-full h-full" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setReadImageUrl('')}
+                          className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-bold rounded-lg"
+                        >
+                          Remove Uploaded Image
+                        </button>
+                      </div>
+                    ) : (
+                      <CloudinaryUploadWidget
+                        onUploadSuccess={setReadImageUrl}
+                        buttonText="Snap or Upload Readings Page Image"
+                        className="w-full bg-primary hover:bg-primary-hover text-xs py-2"
+                      />
+                    )}
+                    <span className="text-[9px] text-muted-foreground block mt-1">
+                      * Uploading a picture here allows parishioners to view the actual page image directly on the site, bypassing old missal text.
+                    </span>
+                  </div>
+
                   <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Verse Title</label><input type="text" required placeholder="John 3:16" value={readEngVerse} onChange={e => setReadEngVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                   <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">English Reading Content</label><textarea rows={3} required placeholder="Full scripture text..." value={readEngText} onChange={e => setReadEngText(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                   <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Swahili Verse Title</label><input type="text" required placeholder="Yohana 3:16" value={readSwaVerse} onChange={e => setReadSwaVerse(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>

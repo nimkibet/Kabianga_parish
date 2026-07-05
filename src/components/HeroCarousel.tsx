@@ -32,7 +32,7 @@ const DEFAULT_SLIDES: Slide[] = [
 export default function HeroCarousel() {
   const [slides, setSlides] = useState<Slide[]>(DEFAULT_SLIDES);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [imageFit, setImageFit] = useState<'cover' | 'contain' | 'fill'>('cover');
+  const [imageFit, setImageFit] = useState<'cover' | 'contain' | 'fill'>('contain');
   
   // Touch coordinates for swiping
   const touchStart = useRef<number | null>(null);

@@ -45,6 +45,11 @@ export default function DailyReadings() {
   const [language, setLanguage] = useState<'english' | 'swahili'>('english');
   const [reading, setReading] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [readingView, setReadingView] = useState<'text' | 'image'>('text');
+
+  useEffect(() => {
+    setReadingView('text');
+  }, [selectedDate, reading]);
 
   // Load persisted language from session
   useEffect(() => {
@@ -250,71 +255,116 @@ export default function DailyReadings() {
               </div>
             </div>
  
-            {/* Reading Content - Structured Sections */}
-            {sections && (
-              <div className="space-y-8 max-w-none text-foreground/90 font-sans text-sm sm:text-base">
-                
-                {/* First Reading */}
-                {sections.firstReading && (
-                  <div className="space-y-3 pl-4 border-l-4 border-primary/20">
-                    <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
-                      <span className="min-w-0 break-words">{sections.firstReadingVerse}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
-                        {language === 'english' ? 'First Reading' : 'Somo la Kwanza'}
-                      </span>
-                    </h3>
-                    <p className="text-foreground/80 leading-relaxed whitespace-pre-line text-sm sm:text-base">
-                      {sections.firstReading}
-                    </p>
-                  </div>
-                )}
- 
-                {/* Second Reading */}
-                {sections.secondReading && (
-                  <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
-                    <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
-                      <span className="min-w-0 break-words">{sections.secondReadingVerse}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
-                        {language === 'english' ? 'Second Reading' : 'Somo la Pili'}
-                      </span>
-                    </h3>
-                    <p className="text-foreground/80 leading-relaxed whitespace-pre-line text-sm sm:text-base">
-                      {sections.secondReading}
-                    </p>
-                  </div>
-                )}
- 
-                {/* Responsorial Psalm */}
-                {sections.psalm && (
-                  <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
-                    <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
-                      <span className="min-w-0 break-words">{sections.psalmVerse}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
-                        {language === 'english' ? 'Responsorial Psalm' : 'Zaburi ya Kujibu'}
-                      </span>
-                    </h3>
-                    <p className="text-foreground/80 italic leading-relaxed whitespace-pre-line text-sm sm:text-base">
-                      {sections.psalm}
-                    </p>
-                  </div>
-                )}
- 
-                {/* Gospel */}
-                {sections.gospel && (
-                  <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
-                    <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
-                      <span className="min-w-0 break-words">{sections.gospelVerse}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
-                        {language === 'english' ? 'Gospel' : 'Injili'}
-                      </span>
-                    </h3>
-                    <p className="text-foreground/80 font-medium leading-relaxed whitespace-pre-line text-sm sm:text-base">
-                      {sections.gospel}
-                    </p>
-                  </div>
-                )}
- 
+            {/* View Mode Switcher (if image_url exists) */}
+            {reading?.image_url && (
+              <div className="flex bg-muted p-0.5 rounded-xl border border-border/80 w-fit mx-auto mb-6">
+                <button
+                  onClick={() => setReadingView('text')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    readingView === 'text' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  📝 Text Version
+                </button>
+                <button
+                  onClick={() => setReadingView('image')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    readingView === 'image' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  📸 Missal Page Photo
+                </button>
               </div>
+            )}
+
+            {/* Reading Content */}
+            {readingView === 'image' && reading?.image_url ? (
+              <div className="space-y-4 animate-fade-in flex flex-col items-center">
+                <div className="relative border border-border rounded-2xl overflow-hidden bg-black/5 max-w-full shadow-inner p-1">
+                  <img 
+                    src={reading.image_url} 
+                    alt="Missal Daily Readings Page Photo" 
+                    className="max-h-[70vh] object-contain w-auto mx-auto rounded-xl" 
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground text-center italic mt-1">
+                  * Scanned page image of today's readings. You can pinch-to-zoom or open in a new tab to enlarge.
+                </p>
+                <a 
+                  href={reading.image_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="mt-2 touch-target px-4 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-bold rounded-xl transition-all flex items-center space-x-1.5 shadow-sm"
+                >
+                  <span>Open Image in New Tab</span>
+                </a>
+              </div>
+            ) : (
+              sections && (
+                <div className="space-y-8 max-w-none text-foreground/90 font-sans text-sm sm:text-base">
+                  
+                  {/* First Reading */}
+                  {sections.firstReading && (
+                    <div className="space-y-3 pl-4 border-l-4 border-primary/20">
+                      <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
+                        <span className="min-w-0 break-words">{sections.firstReadingVerse}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
+                          {language === 'english' ? 'First Reading' : 'Somo la Kwanza'}
+                        </span>
+                      </h3>
+                      <p className="text-foreground/80 font-medium leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                        {sections.firstReading}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Second Reading */}
+                  {sections.secondReading && (
+                    <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
+                      <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
+                        <span className="min-w-0 break-words">{sections.secondReadingVerse}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
+                          {language === 'english' ? 'Second Reading' : 'Somo la Pili'}
+                        </span>
+                      </h3>
+                      <p className="text-foreground/80 font-medium leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                        {sections.secondReading}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Responsorial Psalm */}
+                  {sections.psalm && (
+                    <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
+                      <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
+                        <span className="min-w-0 break-words">{sections.psalmVerse}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
+                          {language === 'english' ? 'Responsorial Psalm' : 'Zaburi ya Kujibu'}
+                        </span>
+                      </h3>
+                      <p className="text-foreground/80 italic leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                        {sections.psalm}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Gospel */}
+                  {sections.gospel && (
+                    <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
+                      <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
+                        <span className="min-w-0 break-words">{sections.gospelVerse}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
+                          {language === 'english' ? 'Gospel' : 'Injili'}
+                        </span>
+                      </h3>
+                      <p className="text-foreground/80 font-medium leading-relaxed whitespace-pre-line text-sm sm:text-base">
+                        {sections.gospel}
+                      </p>
+                    </div>
+                  )}
+
+                </div>
+              )
             )}
 
           </div>

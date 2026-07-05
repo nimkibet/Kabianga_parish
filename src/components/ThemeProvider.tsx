@@ -1,104 +1,96 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { getLiturgicalSeason } from '@/lib/liturgicalSeason';
+import { useEffect, useState } from 'react';
+import { getLiturgicalSeason, LITURGICAL_THEMES } from '@/lib/liturgicalSeason';
 
 /**
- * ThemeProvider applies the correct styling (liturgical colors or clean white theme)
+ * ThemeProvider applies the correct styling (liturgical colors determined by today's Daily Reading)
  * to Tailwind CSS global styling variables across the entire application.
  */
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [themeStyles, setThemeStyles] = useState<string>('');
 
-  const applyTheme = useCallback(() => {
+  useEffect(() => {
     // Helper to generate CSS variables stylesheet
-    const generateStyles = (vars: Record<string, string>) => {
-      const declarations = Object.entries(vars)
-        .map(([name, val]) => `${name}: ${val} !important;`)
-        .join('\n  ');
-      return `:root {\n  ${declarations}\n}`;
-    };
+    const generateStyles = (color: string) => {
+      let theme = LITURGICAL_THEMES.ORDINARY;
+      let muted = '#e8f5e9';
+      let mutedForeground = '#1b5e20';
+      let border = '#c8e6c9';
 
-    // Check if user chose to bypass liturgical colors
-    const isBypassed = localStorage.getItem('theme_bypass') === 'true';
-
-    if (isBypassed) {
-      // Apply Clean Default Light Mode (White background, standard purple primary)
-      const styles = generateStyles({
-        '--color-primary': '#7c3aed',
-        '--color-primary-hover': '#6d28d9',
-        '--color-on-primary': '#ffffff',
-        '--color-background': '#ffffff',
-        '--color-foreground': '#1e1b4b',
-        '--background': '#ffffff',
-        '--foreground': '#1e1b4b',
-        '--card': '#ffffff',
-        '--card-foreground': '#1e1b4b',
-        '--color-card': '#ffffff',
-        '--color-card-foreground': '#1e1b4b',
-        '--muted': '#f3e8ff',
-        '--color-muted': '#f3e8ff',
-        '--muted-foreground': '#6b21a8',
-        '--color-muted-foreground': '#6b21a8',
-        '--border': '#ddd6fe',
-        '--color-border': '#ddd6fe',
-      });
-      setThemeStyles(styles);
-    } else {
-      // Apply calculated Liturgical Season theme dynamically
-      const { season, theme } = getLiturgicalSeason(new Date());
-
-      // Derive secondary utility colors based on active season colors
-      let muted = '#f3e8ff';
-      let mutedForeground = '#6b21a8';
-      let border = '#ddd6fe';
-
-      if (season === 'ORDINARY_TIME') {
-        muted = '#e8f5e9';           // Soft Green
-        mutedForeground = '#1b5e20'; // Dark Green
-        border = '#c8e6c9';          // Light Green Border
-      } else if (season === 'CHRISTMAS' || season === 'EASTER') {
-        muted = '#fff8e1';           // Soft Amber
-        mutedForeground = '#b78103'; // Deep Gold
-        border = '#ffe082';          // Light Gold Border
-      } else { // Advent or Lent (Purple)
+      if (color === 'purple') {
+        theme = LITURGICAL_THEMES.LENT;
         muted = '#f3e8ff';
         mutedForeground = '#6b21a8';
         border = '#ddd6fe';
+      } else if (color === 'white') {
+        theme = LITURGICAL_THEMES.EASTER;
+        muted = '#fff8e1';
+        mutedForeground = '#b78103';
+        border = '#ffe082';
+      } else if (color === 'red') {
+        theme = LITURGICAL_THEMES.RED;
+        muted = '#fef2f2';
+        mutedForeground = '#991b1b';
+        border = '#fca5a5';
+      } else { // green
+        theme = LITURGICAL_THEMES.ORDINARY;
+        muted = '#e8f5e9';
+        mutedForeground = '#1b5e20';
+        border = '#c8e6c9';
       }
 
-      const styles = generateStyles({
-        '--color-primary': theme.primary,
-        '--color-primary-hover': theme.primaryHover,
-        '--color-on-primary': '#ffffff',
-        '--color-background': theme.background,
-        '--color-foreground': theme.foreground,
-        '--background': theme.background,
-        '--foreground': theme.foreground,
-        '--card': '#ffffff',
-        '--card-foreground': theme.foreground,
-        '--color-card': '#ffffff',
-        '--color-card-foreground': theme.foreground,
-        '--muted': muted,
-        '--color-muted': muted,
-        '--muted-foreground': mutedForeground,
-        '--color-muted-foreground': mutedForeground,
-        '--border': border,
-        '--color-border': border,
-      });
-      setThemeStyles(styles);
-    }
-  }, []);
+      const declarations = [
+        ['--color-primary', theme.primary],
+        ['--color-primary-hover', theme.primaryHover],
+        ['--color-on-primary', '#ffffff'],
+        ['--color-background', theme.background],
+        ['--color-foreground', theme.foreground],
+        ['--background', theme.background],
+        ['--foreground', theme.foreground],
+        ['--card', '#ffffff'],
+        ['--card-foreground', theme.foreground],
+        ['--color-card', '#ffffff'],
+        ['--color-card-foreground', theme.foreground],
+        ['--muted', muted],
+        ['--color-muted', muted],
+        ['--muted-foreground', mutedForeground],
+        ['--color-muted-foreground', mutedForeground],
+        ['--border', border],
+        ['--color-border', border],
+      ].map(([name, val]) => `${name}: ${val} !important;`).join('\n  ');
 
-  useEffect(() => {
-    applyTheme();
-
-    // Listen to theme-bypass events dispatched by the Navbar
-    window.addEventListener('theme-bypass-changed', applyTheme);
-    return () => {
-      window.removeEventListener('theme-bypass-changed', applyTheme);
+      return `:root {\n  ${declarations}\n}`;
     };
-  }, [applyTheme]);
+
+    // 1. Initial color based on static liturgical calendar calculation
+    const { season } = getLiturgicalSeason(new Date());
+    let initialColor = 'green';
+    if (season === 'LENT' || season === 'ADVENT') initialColor = 'purple';
+    else if (season === 'EASTER' || season === 'CHRISTMAS') initialColor = 'white';
+
+    setThemeStyles(generateStyles(initialColor));
+
+    // 2. Fetch today's reading to check if there is an active liturgical color (with admin override support)
+    async function fetchColor() {
+      try {
+        const options = { timeZone: 'Africa/Nairobi', year: 'numeric' as const, month: '2-digit' as const, day: '2-digit' as const };
+        const formatter = new Intl.DateTimeFormat('en-CA', options);
+        const todayStr = formatter.format(new Date()); // YYYY-MM-DD
+        
+        const response = await fetch(`/api/readings?date=${todayStr}`);
+        if (response.ok) {
+          const res = await response.json();
+          if (res.success && res.data?.liturgical_color) {
+            setThemeStyles(generateStyles(res.data.liturgical_color));
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load today’s dynamic liturgical color:', err);
+      }
+    }
+    fetchColor();
+  }, []);
 
   return (
     <>

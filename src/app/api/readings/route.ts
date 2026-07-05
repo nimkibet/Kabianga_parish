@@ -296,7 +296,8 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
     alleluia_verse_sw: parsedSw.alleluiaVerse || '',
     gospel_en: parsedEn.gospel,
     gospel_sw: parsedSw.gospel,
-    liturgical_color: parsedEn.liturgicalColor || 'green'
+    liturgical_color: parsedEn.liturgicalColor || 'green',
+    image_url: ''
   };
 
   const { data: insertedData, error: insertError } = await supabase
@@ -312,7 +313,8 @@ export async function scrapeAndCache(targetDateStr: string, targetDateObj: Date)
   
   return {
     ...formattedRecord,
-    id: insertedData.id
+    id: insertedData.id,
+    image_url: insertedData.image_url || ''
   };
 }
 
@@ -409,7 +411,8 @@ export async function GET(request: NextRequest) {
         alleluia_verse_sw: parsedSw.alleluiaVerse || '',
         gospel_en: parsedEn.gospel,
         gospel_sw: parsedSw.gospel,
-        liturgical_color: liturgicalColor
+        liturgical_color: liturgicalColor,
+        image_url: cachedReading.image_url || ''
       };
 
       // OPTIMIZATION: Check if the day + 7 reading is already cached.

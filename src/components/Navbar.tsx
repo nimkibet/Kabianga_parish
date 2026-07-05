@@ -3,21 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BookOpen, Users, Compass, ShieldCheck, Palette, Sun, Landmark } from 'lucide-react';
+import { Home, BookOpen, Users, Compass, ShieldCheck, Landmark } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [isBypassed, setIsBypassed] = useState(false);
   const [brandingName, setBrandingName] = useState('Kabianga Catholic Parish');
 
   useEffect(() => {
-    // Check initial bypass state
-    const stored = localStorage.getItem('theme_bypass') === 'true';
-    if (stored) {
-      setTimeout(() => setIsBypassed(stored), 0);
-    }
-    
     // Fetch dynamic branding name
     async function fetchBranding() {
       try {
@@ -35,14 +28,6 @@ export default function Navbar() {
     }
     fetchBranding();
   }, []);
-
-  const toggleThemeBypass = () => {
-    const nextVal = !isBypassed;
-    localStorage.setItem('theme_bypass', String(nextVal));
-    setIsBypassed(nextVal);
-    // Dispatch custom event to trigger theme re-evaluation in ThemeProvider
-    window.dispatchEvent(new Event('theme-bypass-changed'));
-  };
 
   // 5 items for mobile bottom navigation (strictly keeping 5-item limit)
   const mobileNavItems = [
@@ -123,20 +108,6 @@ export default function Navbar() {
               Prayers & Rosary
             </Link>
  
-            <div className="h-4 w-px bg-border mx-2"></div>
- 
-            {/* Theme Bypass Button */}
-            <button
-              onClick={toggleThemeBypass}
-              className={`touch-target p-2 rounded-lg transition-all flex items-center justify-center border ${
-                isBypassed
-                  ? 'bg-muted text-foreground/75 border-border hover:bg-border'
-                  : 'bg-primary/10 text-primary border-primary/30 hover:bg-primary/20'
-              }`}
-              title={isBypassed ? "Switch to Liturgical Colors" : "Switch to Default White Mode"}
-            >
-              {isBypassed ? <Sun className="w-4 h-4" /> : <Palette className="w-4 h-4" />}
-            </button>
           </nav>
         </div>
  
@@ -149,19 +120,6 @@ export default function Navbar() {
           </div>
  
           <div className="flex items-center space-x-2">
-            {/* Mobile Theme Bypass Button */}
-            <button
-              onClick={toggleThemeBypass}
-              className={`touch-target p-1.5 rounded-lg border flex items-center justify-center transition-all ${
-                isBypassed
-                  ? 'bg-muted text-foreground/75 border-border'
-                  : 'bg-primary/10 text-primary border-primary/30'
-              }`}
-              aria-label="Toggle default light theme"
-            >
-              {isBypassed ? <Sun className="w-4.5 h-4.5" /> : <Palette className="w-4.5 h-4.5" />}
-            </button>
- 
             <Link
               href="/admin"
               className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition-all ${

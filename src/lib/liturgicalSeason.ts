@@ -49,6 +49,13 @@ export const LITURGICAL_THEMES: Record<string, LiturgicalTheme> = {
     background: '#fafdfb',   // Soft Green Tint
     foreground: '#14532d',   // Dark Forest Green
   },
+  RED: {
+    name: 'Martyrs / Passion (Red)',
+    primary: '#dc2626',      // Passion Red
+    primaryHover: '#b91c1c',
+    background: '#fef2f2',   // Soft Red Tint
+    foreground: '#7f1d1d',   // Dark Red
+  },
 };
 
 /**
