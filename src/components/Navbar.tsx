@@ -67,12 +67,8 @@ export default function Navbar() {
     <>
       {/* Global Pinned Header */}
       <header className="sticky top-0 left-0 right-0 w-full z-50 border-b border-border bg-card/90 backdrop-blur-md">
-        {/* Desktop Header Navigation (hidden on mobile) */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between hidden md:flex">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold shadow-md shadow-primary/20">
-              KP
-            </div>
+          <div className="flex items-center">
             <div>
               <Link href="/" className="text-xl font-bold tracking-tight text-foreground hover:opacity-90">
                 {brandingName}
@@ -147,10 +143,7 @@ export default function Navbar() {
  
         {/* Mobile Top Bar (hidden on desktop) */}
         <div className="px-4 py-3 flex items-center justify-between md:hidden">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shadow">
-              KP
-            </div>
+          <div className="flex items-center">
             <div>
               <h1 className="text-base font-bold tracking-tight text-foreground">{brandingName}</h1>
             </div>
