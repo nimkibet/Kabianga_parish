@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BookOpen, ChevronLeft, ChevronRight, HelpCircle, FileText, ArrowRight, Download, Sparkles } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, FileText, Download, Sparkles, HelpCircle } from 'lucide-react';
 
 interface Bead {
   id: number;
@@ -12,6 +12,9 @@ interface Bead {
   prayerTextSw: string;
   mysteryTextEn?: string;
   mysteryTextSw?: string;
+  // Visual positions (scaled to SVG viewbox 0-400 x 0-480)
+  x: number;
+  y: number;
 }
 
 export default function DevotionalPrayers() {
@@ -115,95 +118,118 @@ export default function DevotionalPrayers() {
     }
   };
 
-  // Dynamic builder for Dominican Rosary beads sequence
+  // Dynamic builders for beads sequence with precise visual SVG coordinates
   const buildMarianBeads = (): Bead[] => {
     const list: Bead[] = [];
     const activeMysteries = marianMysteries[selectedMysteryGroup];
 
-    // Introductory prayers
+    // Introductory prayers (Tail going downwards)
     list.push({
-      id: 1, type: 'creed', label: 'Cross', prayerName: prayersTemplates.creed.nameEn,
+      id: 1, type: 'creed', label: '1. Crucifix (Apostles’ Creed)', prayerName: prayersTemplates.creed.nameEn,
       prayerTextEn: prayersTemplates.creed.en, prayerTextSw: prayersTemplates.creed.sw,
-      mysteryTextEn: 'Begin by kissing the crucifix, making the Sign of the Cross, and reciting the Apostles’ Creed.',
-      mysteryTextSw: 'Anza kwa kubusu msalaba, ukijitia alama ya msalaba, na kusali Kanuni ya Imani ya Mitume.'
+      mysteryTextEn: 'Begin at the Crucifix: Make the Sign of the Cross and say the Apostles’ Creed.',
+      mysteryTextSw: 'Anza kwenye Msalaba: Jitie Alama ya Msalaba na usali Kanuni ya Imani ya Mitume.',
+      x: 200, y: 440
     });
     list.push({
-      id: 2, type: 'our-father', label: 'Intro Bead', prayerName: prayersTemplates.ourFather.nameEn,
+      id: 2, type: 'our-father', label: '2. First Large Bead (Our Father)', prayerName: prayersTemplates.ourFather.nameEn,
       prayerTextEn: prayersTemplates.ourFather.en, prayerTextSw: prayersTemplates.ourFather.sw,
-      mysteryTextEn: 'Pray the Our Father for the intentions of the Holy Father.',
-      mysteryTextSw: 'Sali Baba Yetu kwa ajili ya nia za Baba Mtakatifu.'
+      mysteryTextEn: 'On the first large bead, say the Our Father for the Pope’s intentions.',
+      mysteryTextSw: 'Kwenye punje kubwa ya kwanza, sali Baba Yetu kwa ajili ya nia za Baba Mtakatifu.',
+      x: 200, y: 395
     });
-    // 3 Hail Marys for Faith, Hope, and Charity
+    // 3 Hail Marys
     for (let i = 0; i < 3; i++) {
       list.push({
-        id: 3 + i, type: 'hail-mary', label: `Intro Hail Mary ${i+1}`, prayerName: prayersTemplates.hailMary.nameEn,
+        id: 3 + i, type: 'hail-mary', label: `3. Small Bead ${i+1} (Hail Mary)`, prayerName: prayersTemplates.hailMary.nameEn,
         prayerTextEn: prayersTemplates.hailMary.en, prayerTextSw: prayersTemplates.hailMary.sw,
-        mysteryTextEn: `Hail Mary for the increase of the virtues of ${i === 0 ? 'Faith' : i === 1 ? 'Hope' : 'Charity'}.`,
-        mysteryTextSw: `Salamu Maria kwa ajili ya kuongezewa fadhila ya ${i === 0 ? 'Imani' : i === 1 ? 'Matumaini' : 'Mapendo'}.`
+        mysteryTextEn: `Pray a Hail Mary for the increase of the virtue of ${i === 0 ? 'Faith' : i === 1 ? 'Hope' : 'Charity'}.`,
+        mysteryTextSw: `Sali Salamu Maria kwa ajili ya kuongezewa fadhila ya ${i === 0 ? 'Imani' : i === 1 ? 'Matumaini' : 'Mapendo'}.`,
+        x: 200, y: 360 - (i * 25)
       });
     }
     list.push({
-      id: 6, type: 'glory-be', label: 'Intro Glory Be', prayerName: prayersTemplates.gloryBe.nameEn,
+      id: 6, type: 'glory-be', label: '4. Chain Space (Glory Be)', prayerName: prayersTemplates.gloryBe.nameEn,
       prayerTextEn: prayersTemplates.gloryBe.en, prayerTextSw: prayersTemplates.gloryBe.sw,
-      mysteryTextEn: 'Recite the Glory Be and the Fatima Prayer before beginning the decades.',
-      mysteryTextSw: 'Sali Atukuzwe Baba na Sala ya Fatima kabla ya kuanza mafungu ya rozari.'
+      mysteryTextEn: 'On the chain space, pray the Glory Be.',
+      mysteryTextSw: 'Kwenye nafasi inayofuata, sali Atukuzwe Baba.',
+      x: 200, y: 290
     });
 
-    // 5 Decades
+    // 5 Decades mapped around a circle/ellipse loop
+    // Center of loop is at (200, 150), X-radius = 115, Y-radius = 80
+    // The bottom-most point is the Center Medal (200, 230), which is index 90 degrees in SVG coordinates
+    // We map 55 beads around the loop
+    const totalLoopBeads = 5 * 12; // 5 * (1 Our Father + 10 Hail Mary + 1 Glory Be)
     let beadId = 7;
+
     for (let decade = 0; decade < 5; decade++) {
       const mystery = activeMysteries[decade];
       
       // Our Father for the Decade
+      const ofIndex = decade * 12;
+      const ofAngle = 90 + ((ofIndex + 1) * (360 / 60)) * (Math.PI / 180);
       list.push({
-        id: beadId++, type: 'our-father', label: `Decade ${decade+1} Our Father`, prayerName: prayersTemplates.ourFather.nameEn,
+        id: beadId++, type: 'our-father', label: `5. Decade ${decade+1} - Our Father`, prayerName: prayersTemplates.ourFather.nameEn,
         prayerTextEn: prayersTemplates.ourFather.en, prayerTextSw: prayersTemplates.ourFather.sw,
-        mysteryTextEn: mystery.nameEn + '\n\n' + mystery.descEn,
-        mysteryTextSw: mystery.nameSw + '\n\n' + mystery.descSw
+        mysteryTextEn: `Announce the ${mystery.nameEn} and pray the Our Father.`,
+        mysteryTextSw: `Tangaza ${mystery.nameSw} na usali Baba Yetu.`,
+        x: Math.round(200 + 115 * Math.cos(ofAngle)),
+        y: Math.round(150 + 80 * Math.sin(ofAngle))
       });
 
       // 10 Hail Marys
       for (let hm = 0; hm < 10; hm++) {
+        const hmIndex = decade * 12 + 1 + hm;
+        const hmAngle = 90 + ((hmIndex + 1) * (360 / 60)) * (Math.PI / 180);
         list.push({
-          id: beadId++, type: 'hail-mary', label: `Decade ${decade+1} Hail Mary ${hm+1}`, prayerName: prayersTemplates.hailMary.nameEn,
+          id: beadId++, type: 'hail-mary', label: `6. Decade ${decade+1} - Hail Mary ${hm+1}`, prayerName: prayersTemplates.hailMary.nameEn,
           prayerTextEn: prayersTemplates.hailMary.en, prayerTextSw: prayersTemplates.hailMary.sw,
           mysteryTextEn: `Decade ${decade+1} • Bead ${hm+1}\n\nMeditation: ${mystery.nameEn}`,
-          mysteryTextSw: `Fungu la ${decade+1} • Maria ${hm+1}\n\nTafakari: ${mystery.nameSw}`
+          mysteryTextSw: `Fungu la ${decade+1} • Maria ${hm+1}\n\nTafakari: ${mystery.nameSw}`,
+          x: Math.round(200 + 115 * Math.cos(hmAngle)),
+          y: Math.round(150 + 80 * Math.sin(hmAngle))
         });
       }
 
       // Glory Be & Fatima Prayer at end of decade
+      const gbIndex = decade * 12 + 11;
+      const gbAngle = 90 + ((gbIndex + 1) * (360 / 60)) * (Math.PI / 180);
       list.push({
-        id: beadId++, type: 'glory-be', label: `Decade ${decade+1} Glory Be`, prayerName: `${prayersTemplates.gloryBe.nameEn} & ${prayersTemplates.fatima.nameEn}`,
+        id: beadId++, type: 'glory-be', label: `7. Decade ${decade+1} - Glory Be & Fatima`, prayerName: `${prayersTemplates.gloryBe.nameEn} & ${prayersTemplates.fatima.nameEn}`,
         prayerTextEn: `${prayersTemplates.gloryBe.en}\n\n[Fatima Prayer]:\n${prayersTemplates.fatima.en}`,
         prayerTextSw: `${prayersTemplates.gloryBe.sw}\n\n[Sala ya Fatima]:\n${prayersTemplates.fatima.sw}`,
-        mysteryTextEn: `Conclude the ${decade+1} decade with praise to the Holy Trinity.`,
-        mysteryTextSw: `Malizia fungu la ${decade+1} kwa utukufu kwa Utatu Mtakatifu.`
+        mysteryTextEn: `Conclude the decade with the Glory Be and the Fatima Prayer.`,
+        mysteryTextSw: `Malizia fungu hili kwa Atukuzwe Baba na Sala ya Fatima.`,
+        x: Math.round(200 + 115 * Math.cos(gbAngle)),
+        y: Math.round(150 + 80 * Math.sin(gbAngle))
       });
     }
 
-    // Conclusion prayers
+    // Conclusion prayers (Center Medal Piece)
     list.push({
-      id: beadId++, type: 'conclusion', label: 'Hail Holy Queen', prayerName: prayersTemplates.hailHolyQueen.nameEn,
+      id: beadId++, type: 'conclusion', label: '8. Center Medal (Hail Holy Queen)', prayerName: prayersTemplates.hailHolyQueen.nameEn,
       prayerTextEn: prayersTemplates.hailHolyQueen.en, prayerTextSw: prayersTemplates.hailHolyQueen.sw,
-      mysteryTextEn: 'Recite the Hail Holy Queen and final prayer to conclude the Rosary.',
-      mysteryTextSw: 'Sali Salamu Malkia na sala ya mwisho kukamilisha Rozari Takatifu.'
+      mysteryTextEn: 'Conclude the Rosary at the Center Medal by reciting the Hail, Holy Queen.',
+      mysteryTextSw: 'Kamilisha Rozari kwenye Medali ya Kati kwa kusali Salamu Malkia.',
+      x: 200, y: 235
     });
 
     return list;
   };
 
-  // St. Michael Chaplet Beads Sequence
+  // St. Michael Chaplet Beads Sequence (9 groups of 1 + 3)
   const buildStMichaelBeads = (): Bead[] => {
     const list: Bead[] = [];
     
-    // Intro
+    // Medal (Top Center)
     list.push({
-      id: 1, type: 'intro', label: 'Medal', prayerName: 'Opening Invocation',
+      id: 1, type: 'intro', label: '1. Medal Opening Invocation', prayerName: 'Opening Invocation',
       prayerTextEn: 'O God, come to my assistance. O Lord, make haste to help me. Glory be to the Father...',
       prayerTextSw: 'Ee Mungu, uje kuniokoa. Ee Bwana, ufanye haraka kunisaidia. Atukuzwe Baba...',
       mysteryTextEn: 'Begin on the St. Michael Medal. Make the Sign of the Cross and invoke God’s assistance.',
-      mysteryTextSw: 'Anza kwenye Medali ya Mtakatifu Mikaeli. Jitie Alama ya Msalaba na uombe msaada wa Mungu.'
+      mysteryTextSw: 'Anza kwenye Medali ya Mtakatifu Mikaeli. Jitie Alama ya Msalaba na uombe msaada wa Mungu.',
+      x: 200, y: 235
     });
 
     const salutations = [
@@ -219,69 +245,84 @@ export default function DevotionalPrayers() {
     ];
 
     let beadId = 2;
+    // Map loop of 9 groups (36 beads)
     for (let s = 0; s < 9; s++) {
       const sal = salutations[s];
-      // Salutation invocation bead
+      const baseAngle = 90 + (s * (360 / 9)) * (Math.PI / 180);
+
+      // Large bead for Salutation Invocation
       list.push({
-        id: beadId++, type: 'salutation', label: `Salutation ${s+1} Invocation`, prayerName: `Salutation ${s+1}`,
+        id: beadId++, type: 'salutation', label: `2. Salutation ${s+1} Meditation`, prayerName: `Salutation ${s+1}`,
         prayerTextEn: `By the intercession of St. Michael and the Celestial Choir of ${sal.en.split(': ')[1]}, may the Lord vouchsafe to make us worthy...`,
         prayerTextSw: `Kwa uombezi wa Mt. Mikaeli na Kwaya ya Kimbingu ya ${sal.sw.split(': ')[1]}, Bwana atujalie kufanyika wastahili...`,
         mysteryTextEn: sal.en + '\n\n' + sal.descEn,
-        mysteryTextSw: sal.sw + '\n\n' + sal.descSw
+        mysteryTextSw: sal.sw + '\n\n' + sal.descSw,
+        x: Math.round(200 + 115 * Math.cos(baseAngle)),
+        y: Math.round(150 + 80 * Math.sin(baseAngle))
       });
+
       // 1 Our Father
       list.push({
-        id: beadId++, type: 'our-father', label: `Salutation ${s+1} Our Father`, prayerName: prayersTemplates.ourFather.nameEn,
+        id: beadId++, type: 'our-father', label: `3. Salutation ${s+1} - Our Father`, prayerName: prayersTemplates.ourFather.nameEn,
         prayerTextEn: prayersTemplates.ourFather.en, prayerTextSw: prayersTemplates.ourFather.sw,
-        mysteryTextEn: `Pray 1 Our Father for Salutation ${s+1}`,
-        mysteryTextSw: `Sali Baba Yetu 1 kwa ajili ya Salamu ya ${s+1}`
+        mysteryTextEn: `Sali Baba Yetu 1.`,
+        mysteryTextSw: `Sali Baba Yetu 1.`,
+        x: Math.round(200 + 115 * Math.cos(baseAngle + 0.1)),
+        y: Math.round(150 + 80 * Math.sin(baseAngle + 0.1))
       });
+
       // 3 Hail Marys
       for (let h = 0; h < 3; h++) {
+        const hmAngle = baseAngle + 0.2 + (h * 0.08);
         list.push({
-          id: beadId++, type: 'hail-mary', label: `Salutation ${s+1} Hail Mary ${h+1}`, prayerName: prayersTemplates.hailMary.nameEn,
+          id: beadId++, type: 'hail-mary', label: `4. Salutation ${s+1} - Hail Mary ${h+1}`, prayerName: prayersTemplates.hailMary.nameEn,
           prayerTextEn: prayersTemplates.hailMary.en, prayerTextSw: prayersTemplates.hailMary.sw,
-          mysteryTextEn: `Pray Hail Mary ${h+1} of 3 for Salutation ${s+1}`,
-          mysteryTextSw: `Sali Salamu Maria ${h+1} ya 3 kwa ajili ya Salamu ya ${s+1}`
+          mysteryTextEn: `Sali Salamu Maria ya ${h+1} ya 3.`,
+          mysteryTextSw: `Sali Salamu Maria ya ${h+1} ya 3.`,
+          x: Math.round(200 + 115 * Math.cos(hmAngle)),
+          y: Math.round(150 + 80 * Math.sin(hmAngle))
         });
       }
     }
 
-    // 4 final Our Fathers on the tail
+    // 4 final Our Fathers on the tail (Crucifix downwards)
     const angels = ['St. Michael', 'St. Gabriel', 'St. Raphael', 'Our Guardian Angel'];
     const malaika = ['Mt. Mikaeli', 'Mt. Gabrieli', 'Mt. Rafaeli', 'Malaika Mlinzi'];
     for (let a = 0; a < 4; a++) {
       list.push({
-        id: beadId++, type: 'our-father', label: `Final Our Father ${a+1}`, prayerName: `Our Father - in honor of ${angels[a]}`,
+        id: beadId++, type: 'our-father', label: `5. Our Father in honor of ${angels[a]}`, prayerName: `Our Father - ${angels[a]}`,
         prayerTextEn: prayersTemplates.ourFather.en, prayerTextSw: prayersTemplates.ourFather.sw,
         mysteryTextEn: `Pray an Our Father in honor of ${angels[a]}.`,
-        mysteryTextSw: `Sali Baba Yetu kwa heshima ya ${malaika[a]}.`
+        mysteryTextSw: `Sali Baba Yetu kwa heshima ya ${malaika[a]}.`,
+        x: 200, y: 280 + (a * 35)
       });
     }
 
-    // Closing
+    // Closing (Crucifix at bottom)
     list.push({
-      id: beadId++, type: 'conclusion', label: 'Concluding Prayer', prayerName: 'Prayer to St. Michael',
+      id: beadId++, type: 'conclusion', label: '6. Medal Concluding Prayer', prayerName: 'Prayer to St. Michael',
       prayerTextEn: 'O glorious prince St. Michael, chief and leader of the heavenly hosts... pray for us.',
       prayerTextSw: 'Ee mkuu mtukufu Mtakatifu Mikaeli, kiongozi wa jeshi la mbinguni... utuombee.',
       mysteryTextEn: 'Recite the concluding prayer to St. Michael for protection and guidance.',
-      mysteryTextSw: 'Sali sala ya mwisho ya kumalizia kuomba ulinzi wa Mtakatifu Mikaeli.'
+      mysteryTextSw: 'Sali sala ya mwisho ya kumalizia kuomba ulinzi wa Mtakatifu Mikaeli.',
+      x: 200, y: 440
     });
 
     return list;
   };
 
-  // 7 Sorrows Servite Rosary Beads Sequence
+  // 7 Sorrows Servite Rosary Beads Sequence (7 groups of 1 + 7)
   const buildSevenSorrowsBeads = (): Bead[] => {
     const list: Bead[] = [];
     
-    // Opening
+    // Opening (Crucifix bottom)
     list.push({
-      id: 1, type: 'intro', label: 'Cross', prayerName: 'Act of Contrition',
+      id: 1, type: 'intro', label: '1. Opening Act of Contrition', prayerName: 'Act of Contrition',
       prayerTextEn: 'O my God, I am heartily sorry for having offended Thee... I resolve to sin no more. Amen.',
       prayerTextSw: 'Nakuungamia Mungu Mwenyezi, nasikitika sana kwa kukukosea... naahidi kutotenda dhambi tena. Amina.',
       mysteryTextEn: 'Begin with an Act of Contrition and 1 Our Father / 3 Hail Marys in honor of Mary’s tears.',
-      mysteryTextSw: 'Anza kwa kusali Sala ya Toba na Baba Yetu 1 / Salamu Maria 3 kwa heshima ya machozi ya Mama Maria.'
+      mysteryTextSw: 'Anza kwa kusali Sala ya Toba na Baba Yetu 1 / Salamu Maria 3 kwa heshima ya machozi ya Mama Maria.',
+      x: 200, y: 440
     });
 
     const sorrows = [
@@ -295,35 +336,44 @@ export default function DevotionalPrayers() {
     ];
 
     let beadId = 2;
+    // Map loop of 7 groups (56 beads)
     for (let s = 0; s < 7; s++) {
       const sorrow = sorrows[s];
-      // Sorrow introduction
+      const baseAngle = 90 + (s * (360 / 7)) * (Math.PI / 180);
+
+      // Sorrow introduction medal
       list.push({
-        id: beadId++, type: 'sorrow', label: `Sorrow ${s+1} Meditation`, prayerName: `The ${s+1} Sorrow`,
+        id: beadId++, type: 'sorrow', label: `2. Sorrow ${s+1} - Meditation & Our Father`, prayerName: `The ${s+1} Sorrow`,
         prayerTextEn: prayersTemplates.ourFather.en,
         prayerTextSw: prayersTemplates.ourFather.sw,
         mysteryTextEn: sorrow.en + '\n\n' + sorrow.descEn + '\n\nSali Baba Yetu 1.',
-        mysteryTextSw: sorrow.sw + '\n\n' + sorrow.descSw + '\n\nSali Baba Yetu 1.'
+        mysteryTextSw: sorrow.sw + '\n\n' + sorrow.descSw + '\n\nSali Baba Yetu 1.',
+        x: Math.round(200 + 115 * Math.cos(baseAngle)),
+        y: Math.round(150 + 80 * Math.sin(baseAngle))
       });
 
       // 7 Hail Marys
       for (let h = 0; h < 7; h++) {
+        const hmAngle = baseAngle + 0.12 + (h * 0.08);
         list.push({
-          id: beadId++, type: 'hail-mary', label: `Sorrow ${s+1} Hail Mary ${h+1}`, prayerName: prayersTemplates.hailMary.nameEn,
+          id: beadId++, type: 'hail-mary', label: `3. Sorrow ${s+1} - Hail Mary ${h+1}`, prayerName: prayersTemplates.hailMary.nameEn,
           prayerTextEn: prayersTemplates.hailMary.en, prayerTextSw: prayersTemplates.hailMary.sw,
           mysteryTextEn: `Sorrow ${s+1} • Hail Mary ${h+1} of 7`,
-          mysteryTextSw: `Huzuni ya ${s+1} • Salamu Maria ${h+1} ya 7`
+          mysteryTextSw: `Huzuni ya ${s+1} • Salamu Maria ${h+1} ya 7`,
+          x: Math.round(200 + 115 * Math.cos(hmAngle)),
+          y: Math.round(150 + 80 * Math.sin(hmAngle))
         });
       }
     }
 
-    // Closing
+    // Closing (Center piece)
     list.push({
-      id: beadId++, type: 'conclusion', label: 'Closing Prayer', prayerName: 'Concluding Intercession',
+      id: beadId++, type: 'conclusion', label: '4. Concluding Prayer', prayerName: 'Concluding Intercession',
       prayerTextEn: 'Queen of Martyrs, your heart was so deeply pierced... Pray for us that we may share in your virtues.',
       prayerTextSw: 'Malkia wa Mashahidi, moyo wako ulichomwa sana... Utuombee ili tushiriki fadhila zako. Amina.',
       mysteryTextEn: 'Sali Hail Marys 3 in honor of Mary’s tears, followed by the closing prayer.',
-      mysteryTextSw: 'Sali Salamu Maria 3 kwa heshima ya machozi ya Mama Maria, kisha sala ya kuhitimisha.'
+      mysteryTextSw: 'Sali Salamu Maria 3 kwa heshima ya machozi ya Mama Maria, kisha sala ya kuhitimisha.',
+      x: 200, y: 235
     });
 
     return list;
@@ -341,7 +391,6 @@ export default function DevotionalPrayers() {
     if (currentBeadIndex < beads.length - 1) {
       setCurrentBeadIndex(currentBeadIndex + 1);
     } else {
-      // wrap around or finish
       setCurrentBeadIndex(0);
     }
   };
@@ -358,18 +407,18 @@ export default function DevotionalPrayers() {
   };
 
   return (
-    <div className="space-y-10 md:space-y-12 pb-16 max-w-5xl mx-auto">
+    <div className="space-y-8 md:space-y-12 pb-16 max-w-6xl mx-auto px-1">
       
       {/* Page Header */}
-      <div className="text-center space-y-3">
+      <div className="text-center space-y-2">
         <span className="inline-block text-xs font-bold text-primary uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full">
           Devotion & Spiritual Life
         </span>
         <h1 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight">
-          Prayers & Rosary Guide
+          How to Pray the Rosary
         </h1>
-        <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-          Access Catholic prayer guides, download booklets, or use the interactive beads to pray the Rosary step-by-step.
+        <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto">
+          An interactive, visual step-by-step guide to praying the Holy Rosary, Chaplet of St. Michael, and Rosary of the Seven Sorrows.
         </p>
       </div>
 
@@ -382,7 +431,7 @@ export default function DevotionalPrayers() {
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Interactive Rosary</span>
+          <span>Visual Rosary Guide</span>
         </button>
         <button
           onClick={() => setActiveTab('pdfs')}
@@ -397,50 +446,50 @@ export default function DevotionalPrayers() {
 
       {/* Content Sections */}
       {activeTab === 'rosary' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Left Column: Rosary Selectors */}
-          <div className="space-y-4 lg:col-span-1">
-            <div className="bg-card border border-border p-5 rounded-2xl shadow-sm space-y-4">
-              <h3 className="font-extrabold text-base text-foreground">Select Devotional</h3>
+          {/* Column 1: Rosary Selectors (lg:col-span-3) */}
+          <div className="lg:col-span-3 space-y-4">
+            <div className="bg-card border border-border p-4 rounded-2xl shadow-sm space-y-4">
+              <h3 className="font-extrabold text-sm text-foreground">Select Devotional</h3>
               <div className="space-y-2">
                 <button
                   onClick={() => selectRosaryType('marian')}
-                  className={`w-full text-left p-3.5 rounded-xl border text-xs font-semibold flex flex-col gap-1 transition-all ${
+                  className={`w-full text-left p-3 rounded-xl border text-xs font-semibold flex flex-col gap-1 transition-all ${
                     selectedRosary === 'marian'
                       ? 'border-primary bg-primary/5 text-primary'
                       : 'border-border bg-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground'
                   }`}
                 >
-                  <span className="font-extrabold text-foreground text-sm">Holy Rosary (Dominican)</span>
+                  <span className="font-extrabold text-foreground text-xs">Holy Rosary (Dominican)</span>
                   <span>5 Decades. Meditations on the life of Christ.</span>
                 </button>
                 <button
                   onClick={() => selectRosaryType('stmichael')}
-                  className={`w-full text-left p-3.5 rounded-xl border text-xs font-semibold flex flex-col gap-1 transition-all ${
+                  className={`w-full text-left p-3 rounded-xl border text-xs font-semibold flex flex-col gap-1 transition-all ${
                     selectedRosary === 'stmichael'
                       ? 'border-primary bg-primary/5 text-primary'
                       : 'border-border bg-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground'
                   }`}
                 >
-                  <span className="font-extrabold text-foreground text-sm">Chaplet of St. Michael</span>
-                  <span>9 Salutations in honor of the 9 Angel Choirs.</span>
+                  <span className="font-extrabold text-foreground text-xs">Chaplet of St. Michael</span>
+                  <span>9 Salutations to the 9 Angel Choirs.</span>
                 </button>
                 <button
                   onClick={() => selectRosaryType('sevensorrows')}
-                  className={`w-full text-left p-3.5 rounded-xl border text-xs font-semibold flex flex-col gap-1 transition-all ${
+                  className={`w-full text-left p-3 rounded-xl border text-xs font-semibold flex flex-col gap-1 transition-all ${
                     selectedRosary === 'sevensorrows'
                       ? 'border-primary bg-primary/5 text-primary'
                       : 'border-border bg-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground'
                   }`}
                 >
-                  <span className="font-extrabold text-foreground text-sm">Rosary of the Seven Sorrows</span>
-                  <span>7 Septets. Meditations on Our Lady of Sorrows.</span>
+                  <span className="font-extrabold text-foreground text-xs">Rosary of Seven Sorrows</span>
+                  <span>7 Meditations on Our Lady of Sorrows.</span>
                 </button>
               </div>
 
               {selectedRosary === 'marian' && (
-                <div className="space-y-2 pt-2 border-t border-border">
+                <div className="space-y-2 pt-3 border-t border-border">
                   <h4 className="font-extrabold text-xs text-foreground uppercase tracking-wider">Mysteries</h4>
                   <div className="grid grid-cols-2 gap-1.5">
                     {(['joyful', 'luminous', 'sorrowful', 'glorious'] as const).map((g) => (
@@ -462,25 +511,196 @@ export default function DevotionalPrayers() {
             </div>
           </div>
 
-          {/* Right Column: Visualizer & Active Bead */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Column 2: The Direct Visual Bead Map (lg:col-span-4) */}
+          <div className="lg:col-span-4 bg-card border border-border p-4 rounded-2xl shadow-sm flex flex-col items-center">
+            <h3 className="font-extrabold text-sm text-foreground text-center border-b border-border/80 pb-2 w-full">
+              Rosary Bead Map
+            </h3>
             
-            {/* Active Prayer Card */}
+            {/* SVG Interactive Diagram */}
+            <div className="relative w-full aspect-[400/480] max-w-[340px] mt-4 flex items-center justify-center bg-muted/10 rounded-xl border border-border/40 p-2">
+              <svg
+                viewBox="0 0 400 480"
+                className="w-full h-full select-none"
+              >
+                {/* Connecting Chains / Loops */}
+                <ellipse
+                  cx="200"
+                  cy="150"
+                  rx="115"
+                  ry="80"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-border/60"
+                />
+                <line
+                  x1="200"
+                  y1="230"
+                  x2="200"
+                  y2="440"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  className="text-border/60"
+                />
+
+                {/* Render Beads */}
+                {beads.map((b, idx) => {
+                  const isActive = idx === currentBeadIndex;
+                  const isCrucifix = b.type === 'creed';
+                  const isConclusion = b.type === 'conclusion';
+                  const isOurFather = b.type === 'our-father' || b.type === 'sorrow' || b.type === 'salutation';
+
+                  let radius = 7;
+                  let fill = '#a3a3a3'; // Default gray
+                  let stroke = '#737373';
+                  let strokeWidth = 1.5;
+
+                  if (isCrucifix) {
+                    radius = 12;
+                    fill = '#ef4444'; // Red for Crucifix
+                    stroke = '#b91c1c';
+                  } else if (isConclusion) {
+                    radius = 11;
+                    fill = '#fbbf24'; // Gold Medal
+                    stroke = '#d97706';
+                  } else if (isOurFather) {
+                    radius = 9;
+                    fill = '#f59e0b'; // Amber
+                    stroke = '#b45309';
+                  } else {
+                    fill = '#a78bfa'; // Purple for Hail Mary
+                    stroke = '#6d28d9';
+                  }
+
+                  if (isActive) {
+                    fill = '#16a34a'; // Vibrant Green for Active Bead
+                    stroke = '#15803d';
+                    radius += 3;
+                    strokeWidth = 2.5;
+                  }
+
+                  if (isCrucifix) {
+                    // Draw a visual Cross instead of a circle
+                    return (
+                      <g
+                        key={idx}
+                        className="cursor-pointer transition-all duration-300"
+                        onClick={() => setCurrentBeadIndex(idx)}
+                      >
+                        {/* Horizontal Crossbar */}
+                        <rect
+                          x={b.x - 14}
+                          y={b.y - 4}
+                          width="28"
+                          height="8"
+                          rx="2"
+                          fill={fill}
+                          stroke={stroke}
+                          strokeWidth={strokeWidth}
+                        />
+                        {/* Vertical Crossbar */}
+                        <rect
+                          x={b.x - 4}
+                          y={b.y - 20}
+                          width="8"
+                          height="36"
+                          rx="2"
+                          fill={fill}
+                          stroke={stroke}
+                          strokeWidth={strokeWidth}
+                        />
+                        {/* Glowing Active Ring */}
+                        {isActive && (
+                          <circle
+                            cx={b.x}
+                            cy={b.y}
+                            r="22"
+                            fill="none"
+                            stroke="#22c55e"
+                            strokeWidth="2"
+                            strokeDasharray="4,4"
+                            className="animate-spin"
+                            style={{ animationDuration: '6s' }}
+                          />
+                        )}
+                      </g>
+                    );
+                  }
+
+                  return (
+                    <g
+                      key={idx}
+                      className="cursor-pointer transition-all duration-300"
+                      onClick={() => setCurrentBeadIndex(idx)}
+                    >
+                      {/* Outer Glow for Active Bead */}
+                      {isActive && (
+                        <circle
+                          cx={b.x}
+                          cy={b.y}
+                          r={radius + 6}
+                          fill="rgba(34, 197, 94, 0.15)"
+                          className="animate-pulse"
+                        />
+                      )}
+                      
+                      {/* Bead Node */}
+                      <circle
+                        cx={b.x}
+                        cy={b.y}
+                        r={radius}
+                        fill={fill}
+                        stroke={stroke}
+                        strokeWidth={strokeWidth}
+                        className="transition-all hover:scale-125"
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+            
+            {/* Guide Legend */}
+            <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] font-bold text-muted-foreground w-full border-t border-border/60 pt-3">
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2.5 h-2.5 bg-red-500 rounded border border-red-700 block shrink-0" />
+                <span>Crucifix (Start / Creed)</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2.5 h-2.5 bg-amber-500 rounded border border-amber-700 block shrink-0" />
+                <span>Large Bead (Our Father)</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2.5 h-2.5 bg-purple-400 rounded border border-purple-600 block shrink-0" />
+                <span>Small Bead (Hail Mary)</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2.5 h-2.5 bg-emerald-500 rounded border border-emerald-700 block shrink-0" />
+                <span>Active Bead Indicator</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Step Details & Script (lg:col-span-5) */}
+          <div className="lg:col-span-5 space-y-4">
+            
+            {/* Guide Step Script */}
             <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col">
               
               {/* Header Info */}
               <div className="bg-muted/40 p-4 border-b border-border/80 flex justify-between items-center">
                 <div>
                   <span className="inline-block text-[9px] font-extrabold uppercase tracking-widest bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full">
-                    Bead {currentBeadIndex + 1} of {beads.length}
+                    Step {currentBeadIndex + 1} of {beads.length}
                   </span>
-                  <h4 className="font-black text-sm text-foreground mt-1">{currentBead.label}</h4>
+                  <h4 className="font-black text-sm text-foreground mt-1 leading-snug">{currentBead.label}</h4>
                 </div>
 
                 <div className="flex bg-muted rounded-lg p-0.5 border border-border">
                   <button
                     onClick={() => setRosaryLanguage('english')}
-                    className={`px-2 py-1 text-[10px] font-bold rounded ${
+                    className={`px-2.5 py-1 text-[10px] font-bold rounded ${
                       rosaryLanguage === 'english' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
                     }`}
                   >
@@ -488,31 +708,31 @@ export default function DevotionalPrayers() {
                   </button>
                   <button
                     onClick={() => setRosaryLanguage('swahili')}
-                    className={`px-2 py-1 text-[10px] font-bold rounded ${
+                    className={`px-2.5 py-1 text-[10px] font-bold rounded ${
                       rosaryLanguage === 'swahili' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
                     }`}
                   >
-                    Swahili
+                    Kiswahili
                   </button>
                 </div>
               </div>
 
               {/* Meditation Text / Mystery */}
               {(currentBead.mysteryTextEn || currentBead.mysteryTextSw) && (
-                <div className="p-4 bg-primary/5 border-b border-border/60 text-xs text-foreground/90 space-y-1">
-                  <h5 className="font-black text-[10px] uppercase text-primary tracking-wider">Mystery / Meditation</h5>
-                  <p className="leading-relaxed whitespace-pre-line">
+                <div className="p-4 bg-primary/5 border-b border-border/60 text-xs text-foreground/90 space-y-1.5">
+                  <h5 className="font-black text-[9px] uppercase text-primary tracking-widest">Meditation & Mystery</h5>
+                  <p className="leading-relaxed whitespace-pre-line font-medium text-foreground/80">
                     {rosaryLanguage === 'english' ? currentBead.mysteryTextEn : currentBead.mysteryTextSw}
                   </p>
                 </div>
               )}
 
               {/* Active Prayer Text */}
-              <div className="p-6 sm:p-8 flex-1 flex flex-col justify-center space-y-4 min-h-[180px]">
+              <div className="p-6 sm:p-8 flex-1 flex flex-col justify-center space-y-4 min-h-[220px]">
                 <h3 className="font-extrabold text-base text-primary border-b border-primary/10 pb-1 w-fit">
                   {rosaryLanguage === 'english' ? currentBead.prayerName : (selectedRosary === 'marian' ? prayersTemplates[currentBead.type as keyof typeof prayersTemplates]?.nameSw || currentBead.prayerName : currentBead.prayerName)}
                 </h3>
-                <p className="text-sm sm:text-base text-foreground leading-relaxed whitespace-pre-line italic">
+                <p className="text-sm sm:text-base text-foreground/90 leading-relaxed whitespace-pre-line italic font-serif">
                   {rosaryLanguage === 'english' ? currentBead.prayerTextEn : currentBead.prayerTextSw}
                 </p>
               </div>
@@ -527,52 +747,25 @@ export default function DevotionalPrayers() {
                   <ChevronLeft className="w-4 h-4" />
                   <span>Previous</span>
                 </button>
-                
-                <span className="text-[10px] font-bold text-muted-foreground">
-                  Decade Progress: {Math.floor((currentBeadIndex / (beads.length - 1)) * 100)}%
-                </span>
 
                 <button
                   onClick={handleNextBead}
                   className="touch-target px-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-all flex items-center space-x-1 shadow-md shadow-primary/15"
                 >
-                  <span>{currentBeadIndex === beads.length - 1 ? 'Start Over' : 'Next Bead'}</span>
+                  <span>{currentBeadIndex === beads.length - 1 ? 'Start Over' : 'Next Step'}</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
 
             </div>
 
-            {/* Virtual Beads Tracker Visual representation */}
-            <div className="bg-card border border-border p-4 rounded-2xl shadow-sm space-y-3">
-              <h4 className="font-extrabold text-xs text-foreground uppercase tracking-widest">Visual Beads Map</h4>
-              <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto p-1.5 bg-muted/30 rounded-xl no-scrollbar">
-                {beads.map((b, idx) => {
-                  const isActive = idx === currentBeadIndex;
-                  let colorClass = 'bg-muted-foreground/30 border-muted-foreground/20';
-                  if (isActive) {
-                    colorClass = 'bg-primary border-primary scale-125 shadow-md shadow-primary/20 ring-2 ring-primary/20';
-                  } else if (idx < currentBeadIndex) {
-                    colorClass = 'bg-primary/45 border-primary/30';
-                  } else if (b.type === 'our-father') {
-                    colorClass = 'bg-amber-400/50 border-amber-500/30 scale-110';
-                  } else if (b.type === 'conclusion') {
-                    colorClass = 'bg-red-400/50 border-red-500/30 scale-110';
-                  }
-
-                  return (
-                    <button
-                      key={b.id || idx}
-                      onClick={() => setCurrentBeadIndex(idx)}
-                      className={`w-3.5 h-3.5 rounded-full border transition-all hover:scale-125 focus:outline-none ${colorClass}`}
-                      title={b.label}
-                    />
-                  );
-                })}
+            {/* Decade Tracker bar */}
+            <div className="bg-card border border-border p-4 rounded-2xl shadow-sm flex items-center justify-between">
+              <span className="text-xs font-black text-foreground">Decade Guide</span>
+              <div className="flex items-center space-x-1 bg-muted px-2.5 py-1 rounded-xl border border-border/80 text-[10px] font-bold">
+                <span>Progress:</span>
+                <span className="text-primary font-black">{Math.floor((currentBeadIndex / (beads.length - 1)) * 100)}%</span>
               </div>
-              <p className="text-[10px] text-muted-foreground italic text-center">
-                * Click on any bead on the map to jump directly to that prayer. Amber beads are "Our Father" prayers, grey/purple are "Hail Marys".
-              </p>
             </div>
 
           </div>
