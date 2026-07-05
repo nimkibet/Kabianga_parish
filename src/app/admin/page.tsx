@@ -1204,7 +1204,7 @@ export default function AdminPage() {
         
         {/* Desktop Sidebar (Left) */}
         <aside className="hidden lg:block w-64 shrink-0">
-          <div className="bg-card border border-border rounded-2xl p-4 sticky top-6 space-y-6">
+          <div className="bg-card border border-border rounded-2xl p-4 sticky top-20 space-y-6">
             {NAVIGATION_CATEGORIES.map((category) => (
               <div key={category.name} className="space-y-2">
                 <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-wider px-2">
@@ -1238,7 +1238,7 @@ export default function AdminPage() {
         {/* Mobile Navigation — collapsed by default; floating trigger button */}
         <div className="lg:hidden">
           {/* Sticky top bar */}
-          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md py-3 px-4 sm:px-6 -mx-4 sm:-mx-6 border-b border-border/80 flex items-center justify-between mb-6 shadow-sm">
+          <div className="sticky top-14 z-40 bg-background/95 backdrop-blur-md py-3 px-4 sm:px-6 -mx-4 sm:-mx-6 border-b border-border/80 flex items-center justify-between mb-6 shadow-sm">
             <span className="text-xs text-muted-foreground font-semibold">
               Section: <span className="text-primary font-bold">
                 {[...NAVIGATION_CATEGORIES[0].items, ...NAVIGATION_CATEGORIES[1].items, ...NAVIGATION_CATEGORIES[2].items, ...NAVIGATION_CATEGORIES[3].items]
@@ -1258,7 +1258,7 @@ export default function AdminPage() {
 
           {/* Slide-in Drawer — only rendered when open */}
           {isMobileNavOpen && (
-            <div className="fixed inset-0 z-50 flex justify-end">
+            <div className="fixed inset-0 z-60 flex justify-end">
               {/* Backdrop */}
               <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"

@@ -5,17 +5,20 @@ import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Kabianga Catholic Parish",
-    default: "Kabianga Catholic Parish",
+    template: "%s | St. John Paul II Kabianga Catholic Parish",
+    default: "St. John Paul II Kabianga Catholic Parish",
   },
   verification: {
     google: "FGFcghGjaq4hXdgLmVup6F6WKz40EieegAoGv-ezzzg",
   },
-  description: "Welcome to Kabianga Catholic Parish - St. John Paul II Parish, Diocese of Kericho.",
+  description: "Welcome to St. John Paul II Kabianga Catholic Parish - Diocese of Kericho.",
   keywords: [
     "kabianga",
     "kabianga parish",
     "kabianga catholic parish",
+    "st john paul ii kabianga",
+    "st john paul ii kabianga parish",
+    "st john paul ii kabianga catholic parish",
     "kericho diocese",
     "kericho dioces",
     "parish kabianga",
@@ -35,10 +38,10 @@ export const metadata: Metadata = {
     canonical: "https://kabiangaparish.vercel.app/",
   },
   openGraph: {
-    title: "Kabianga Catholic Parish",
-    description: "Welcome to Kabianga Catholic Parish - St. John Paul II Parish, Diocese of Kericho.",
+    title: "St. John Paul II Kabianga Catholic Parish",
+    description: "Welcome to St. John Paul II Kabianga Catholic Parish - Diocese of Kericho.",
     url: "https://kabiangaparish.vercel.app/",
-    siteName: "Kabianga Catholic Parish",
+    siteName: "St. John Paul II Kabianga Catholic Parish",
     locale: "en_US",
     type: "website",
   },
@@ -63,8 +66,8 @@ export default function RootLayout({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "Kabianga Catholic Parish",
-    "alternateName": ["Catholic Parish of Kabianga", "Kabianga Catholic Church"],
+    "name": "St. John Paul II Kabianga Catholic Parish",
+    "alternateName": ["Catholic Parish of Kabianga", "Kabianga Catholic Church", "St. John Paul II Kabianga Catholic Church"],
     "url": "https://kabiangaparish.vercel.app/",
   };
 

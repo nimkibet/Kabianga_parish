@@ -97,10 +97,10 @@ export default function DailyReadings() {
   };
 
   const formatDate = (dateStr: string) => {
-    const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const options: Intl.DateTimeFormatOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateStr).toLocaleDateString(undefined, options);
   };
-
+ 
   // Helper to extract structured sections with legacy fallback
   const getStructuredSections = () => {
     if (!reading) return null;
@@ -138,11 +138,11 @@ export default function DailyReadings() {
       gospelVerse: isEnglish ? 'Gospel' : 'Injili'
     };
   };
-
+ 
   const sections = getStructuredSections();
   const currentLiturgicalColor = reading?.liturgical_color || 'green';
   const colorTheme = colorMap[currentLiturgicalColor] || colorMap.green;
-
+ 
   return (
     <div className="max-w-3xl mx-auto space-y-6 px-1 pb-16">
       
@@ -154,7 +154,7 @@ export default function DailyReadings() {
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Daily Readings</h1>
         <p className="text-xs text-muted-foreground">Soma Masomo ya Leo / Read Today's Scriptures</p>
       </div>
-
+ 
       {/* Date Navigation & Controls */}
       <div className="bg-card border border-border p-4 rounded-2xl shadow-sm space-y-4">
         
@@ -162,26 +162,26 @@ export default function DailyReadings() {
         <div className="flex justify-between items-center gap-2">
           <button
             onClick={handlePrevDay}
-            className="touch-target p-2 rounded-xl bg-muted text-foreground/80 hover:bg-border active:scale-95 transition-all flex items-center justify-center border border-border/50"
+            className="touch-target shrink-0 p-2 rounded-xl bg-muted text-foreground/80 hover:bg-border active:scale-95 transition-all flex items-center justify-center border border-border/50"
             aria-label="Previous Day"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           
-          <div className="flex-1 text-center font-bold text-sm text-foreground flex items-center justify-center space-x-1.5 py-1 px-3 bg-muted/30 rounded-xl border border-border/20">
+          <div className="flex-1 min-w-0 text-center font-bold text-xs sm:text-sm text-foreground flex items-center justify-center space-x-1.5 py-1 px-2 sm:px-3 bg-muted/30 rounded-xl border border-border/20">
             <Calendar className="w-4 h-4 text-primary shrink-0" />
             <span className="truncate">{formatDate(selectedDate)}</span>
           </div>
-
+ 
           <button
             onClick={handleNextDay}
-            className="touch-target p-2 rounded-xl bg-muted text-foreground/80 hover:bg-border active:scale-95 transition-all flex items-center justify-center border border-border/50"
+            className="touch-target shrink-0 p-2 rounded-xl bg-muted text-foreground/80 hover:bg-border active:scale-95 transition-all flex items-center justify-center border border-border/50"
             aria-label="Next Day"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-
+ 
         {/* Date Picker Manual */}
         <div className="flex items-center space-x-3 bg-muted/40 p-2 rounded-xl border border-border/30">
           <label htmlFor="date-manual" className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Choose Date:</label>
@@ -190,10 +190,10 @@ export default function DailyReadings() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="flex-1 bg-transparent border-0 text-xs font-bold text-foreground focus:ring-0 p-1 cursor-pointer"
+            className="flex-1 min-w-0 bg-transparent border-0 text-xs font-bold text-foreground focus:ring-0 p-1 cursor-pointer"
           />
         </div>
-
+ 
         {/* Language Switches */}
         <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-xl">
           <button
@@ -204,8 +204,11 @@ export default function DailyReadings() {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Globe className="w-3.5 h-3.5" />
-            <span>English Readings</span>
+            <Globe className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">
+              <span className="hidden sm:inline">English Readings</span>
+              <span className="sm:hidden">English</span>
+            </span>
           </button>
           <button
             onClick={() => handleLanguageChange('swahili')}
@@ -215,14 +218,17 @@ export default function DailyReadings() {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Masomo ya Kiswahili</span>
+            <BookOpen className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">
+              <span className="hidden sm:inline">Masomo ya Kiswahili</span>
+              <span className="sm:hidden">Kiswahili</span>
+            </span>
           </button>
         </div>
       </div>
-
+ 
       {/* Readings Display Card with Top Color Border */}
-      <div className={`bg-card border-x border-b border-t-8 ${colorTheme.border} border-border rounded-2xl shadow-md p-6 sm:p-8 min-h-[300px] flex flex-col justify-between transition-all duration-300`}>
+      <div className={`bg-card border-x border-b border-t-8 ${colorTheme.border} border-border rounded-2xl shadow-md p-4 sm:p-8 min-h-[300px] flex flex-col justify-between transition-all duration-300`}>
         
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center space-y-3 py-20">
@@ -234,16 +240,16 @@ export default function DailyReadings() {
             
             {/* Reading Title / Verse header & Color indicator */}
             <div className="border-b border-border/80 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
                 <span className={`inline-block text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded ${colorTheme.accentBg}`}>
                   {colorTheme.name}
                 </span>
-                <h2 className="text-2xl font-bold text-foreground tracking-tight">
+                <h2 className="text-lg sm:text-2xl font-extrabold text-foreground tracking-tight break-words">
                   {language === 'english' ? reading.english_verse : reading.swahili_verse}
                 </h2>
               </div>
             </div>
-
+ 
             {/* Reading Content - Structured Sections */}
             {sections && (
               <div className="space-y-8 max-w-none text-foreground/90 font-sans text-sm sm:text-base">
@@ -251,9 +257,9 @@ export default function DailyReadings() {
                 {/* First Reading */}
                 {sections.firstReading && (
                   <div className="space-y-3 pl-4 border-l-4 border-primary/20">
-                    <h3 className={`text-base font-extrabold tracking-wide flex items-center justify-between ${colorTheme.text}`}>
-                      <span>{sections.firstReadingVerse}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10`}>
+                    <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
+                      <span className="min-w-0 break-words">{sections.firstReadingVerse}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
                         {language === 'english' ? 'First Reading' : 'Somo la Kwanza'}
                       </span>
                     </h3>
@@ -262,13 +268,13 @@ export default function DailyReadings() {
                     </p>
                   </div>
                 )}
-
+ 
                 {/* Second Reading */}
                 {sections.secondReading && (
                   <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
-                    <h3 className={`text-base font-extrabold tracking-wide flex items-center justify-between ${colorTheme.text}`}>
-                      <span>{sections.secondReadingVerse}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10`}>
+                    <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
+                      <span className="min-w-0 break-words">{sections.secondReadingVerse}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
                         {language === 'english' ? 'Second Reading' : 'Somo la Pili'}
                       </span>
                     </h3>
@@ -277,13 +283,13 @@ export default function DailyReadings() {
                     </p>
                   </div>
                 )}
-
+ 
                 {/* Responsorial Psalm */}
                 {sections.psalm && (
                   <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
-                    <h3 className={`text-base font-extrabold tracking-wide flex items-center justify-between ${colorTheme.text}`}>
-                      <span>{sections.psalmVerse}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10`}>
+                    <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
+                      <span className="min-w-0 break-words">{sections.psalmVerse}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
                         {language === 'english' ? 'Responsorial Psalm' : 'Zaburi ya Kujibu'}
                       </span>
                     </h3>
@@ -292,13 +298,13 @@ export default function DailyReadings() {
                     </p>
                   </div>
                 )}
-
+ 
                 {/* Gospel */}
                 {sections.gospel && (
                   <div className="space-y-3 pl-4 border-l-4 border-primary/20 pt-2">
-                    <h3 className={`text-base font-extrabold tracking-wide flex items-center justify-between ${colorTheme.text}`}>
-                      <span>{sections.gospelVerse}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10`}>
+                    <h3 className={`text-xs sm:text-base font-extrabold tracking-wide flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 ${colorTheme.text}`}>
+                      <span className="min-w-0 break-words">{sections.gospelVerse}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/5 border border-primary/10 select-none shrink-0 w-fit">
                         {language === 'english' ? 'Gospel' : 'Injili'}
                       </span>
                     </h3>
@@ -307,7 +313,7 @@ export default function DailyReadings() {
                     </p>
                   </div>
                 )}
-
+ 
               </div>
             )}
 

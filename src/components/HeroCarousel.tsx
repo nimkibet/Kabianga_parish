@@ -13,17 +13,17 @@ interface Slide {
 
 const DEFAULT_SLIDES: Slide[] = [
   {
-    image_url: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=1200',
-    title: 'Welcome to Kabianga Parish',
+    image_url: '/images.jpeg',
+    title: 'Welcome to St. John Paul II Kabianga Parish',
     quote: '"I was glad when they said to me, \'Let us go to the house of the Lord.\'" — Psalm 122:1',
   },
   {
-    image_url: 'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=1200',
+    image_url: '/imag2es.jpeg',
     title: 'Growing Together in Faith',
     quote: '"For where two or three gather in my name, there am I with them." — Matthew 18:20',
   },
   {
-    image_url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=1200',
+    image_url: '/images3.jpeg',
     title: 'Serving Our Community',
     quote: '"Let your light so shine before men, that they may see your good works." — Matthew 5:16',
   },

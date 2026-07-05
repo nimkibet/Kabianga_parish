@@ -154,7 +154,7 @@ export default function GalleryPage() {
       {/* Lightbox Modal (Accessible full-screen preview with swipe-away mindset and large close trigger) */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex flex-col justify-between items-center p-4 md:p-8 animate-fade-in"
+          className="fixed inset-0 z-60 bg-black/95 backdrop-blur-sm flex flex-col justify-between items-center p-4 md:p-8 animate-fade-in"
           onClick={() => setSelectedImage(null)}
           role="dialog"
           aria-modal="true"

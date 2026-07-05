@@ -15,7 +15,8 @@ import {
   Coins, 
   FileText, 
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 import HeroCarousel from '@/components/HeroCarousel';
 
@@ -207,7 +208,7 @@ export default function Home() {
             <span>Service Times</span>
           </a>
           <a
-            href="https://maps.google.com"
+            href="https://www.google.com/maps/search/?api=1&query=St.+John+Paul+II+Kabianga+Catholic+Parish,+Kabianga+University"
             target="_blank"
             rel="noopener noreferrer"
             className="touch-target px-5 py-2.5 bg-muted text-foreground/80 font-semibold rounded-xl border border-border hover:bg-border active:scale-95 transition-all flex items-center space-x-2"
@@ -312,6 +313,17 @@ export default function Home() {
             <div>
               <h4 className="font-extrabold text-sm text-foreground">Asset Booking</h4>
               <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">mixers, speakers, piano reservations</p>
+            </div>
+          </Link>
+
+          {/* Prayers & Rosary Link */}
+          <Link href="/prayers" className="bg-card border border-border p-4 rounded-2xl flex flex-col justify-between hover:border-primary/30 transition-all hover:shadow-sm space-y-4 group">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-600 dark:text-violet-400 group-hover:bg-violet-500/20">
+              <Sparkles className="w-5.5 h-5.5" />
+            </div>
+            <div>
+              <h4 className="font-extrabold text-sm text-foreground">Prayers & Rosary</h4>
+              <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">Interactive Rosary & PDF prayer books</p>
             </div>
           </Link>
 

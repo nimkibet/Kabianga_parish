@@ -65,9 +65,10 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Desktop Header Navigation (hidden on mobile) */}
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-card/85 backdrop-blur-md hidden md:block">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      {/* Global Pinned Header */}
+      <header className="sticky top-0 left-0 right-0 w-full z-50 border-b border-border bg-card/90 backdrop-blur-md">
+        {/* Desktop Header Navigation (hidden on mobile) */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between hidden md:flex">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold shadow-md shadow-primary/20">
               KP
@@ -118,9 +119,17 @@ export default function Navbar() {
             >
               Gallery
             </Link>
-
+            <Link
+              href="/prayers"
+              className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                pathname === '/prayers' ? 'text-primary font-bold' : 'text-foreground/75 hover:text-foreground'
+              }`}
+            >
+              Prayers & Rosary
+            </Link>
+ 
             <div className="h-4 w-px bg-border mx-2"></div>
-
+ 
             {/* Theme Bypass Button */}
             <button
               onClick={toggleThemeBypass}
@@ -135,49 +144,49 @@ export default function Navbar() {
             </button>
           </nav>
         </div>
+ 
+        {/* Mobile Top Bar (hidden on desktop) */}
+        <div className="px-4 py-3 flex items-center justify-between md:hidden">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shadow">
+              KP
+            </div>
+            <div>
+              <h1 className="text-base font-bold tracking-tight text-foreground">{brandingName}</h1>
+            </div>
+          </div>
+ 
+          <div className="flex items-center space-x-2">
+            {/* Mobile Theme Bypass Button */}
+            <button
+              onClick={toggleThemeBypass}
+              className={`touch-target p-1.5 rounded-lg border flex items-center justify-center transition-all ${
+                isBypassed
+                  ? 'bg-muted text-foreground/75 border-border'
+                  : 'bg-primary/10 text-primary border-primary/30'
+              }`}
+              aria-label="Toggle default light theme"
+            >
+              {isBypassed ? <Sun className="w-4.5 h-4.5" /> : <Palette className="w-4.5 h-4.5" />}
+            </button>
+ 
+            <Link
+              href="/admin"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition-all ${
+                pathname.startsWith('/admin')
+                  ? 'bg-primary text-white shadow-inner'
+                  : 'bg-muted text-foreground/80 hover:bg-border'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Admin</span>
+            </Link>
+          </div>
+        </div>
       </header>
-
-      {/* Mobile Top Bar */}
-      <div className="sticky top-0 z-40 w-full border-b border-border bg-card/90 backdrop-blur-md px-4 py-3 flex items-center justify-between md:hidden">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shadow">
-            KP
-          </div>
-          <div>
-            <h1 className="text-base font-bold tracking-tight text-foreground">{brandingName}</h1>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          {/* Mobile Theme Bypass Button */}
-          <button
-            onClick={toggleThemeBypass}
-            className={`touch-target p-1.5 rounded-lg border flex items-center justify-center transition-all ${
-              isBypassed
-                ? 'bg-muted text-foreground/75 border-border'
-                : 'bg-primary/10 text-primary border-primary/30'
-            }`}
-            aria-label="Toggle default light theme"
-          >
-            {isBypassed ? <Sun className="w-4.5 h-4.5" /> : <Palette className="w-4.5 h-4.5" />}
-          </button>
-
-          <Link
-            href="/admin"
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition-all ${
-              pathname.startsWith('/admin')
-                ? 'bg-primary text-white shadow-inner'
-                : 'bg-muted text-foreground/80 hover:bg-border'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Admin</span>
-          </Link>
-        </div>
-      </div>
-
+ 
       {/* Mobile Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-t border-border py-1 px-2 flex justify-around items-center md:hidden pb-safe-bottom shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border py-1 px-2 flex justify-around items-center md:hidden pb-safe-bottom shadow-lg">
         {mobileNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
