@@ -41,7 +41,7 @@ export default function HeroCarousel() {
 
   // Load saved image fit preference on mount
   useEffect(() => {
-    const saved = localStorage.getItem('carousel_image_fit') as any;
+    const saved = localStorage.getItem('carousel_image_fit_v2') as any;
     if (saved && ['cover', 'contain', 'fill'].includes(saved)) {
       setImageFit(saved);
     }
@@ -55,7 +55,7 @@ export default function HeroCarousel() {
     };
     const next = nextFit[imageFit];
     setImageFit(next);
-    localStorage.setItem('carousel_image_fit', next);
+    localStorage.setItem('carousel_image_fit_v2', next);
   };
 
   useEffect(() => {

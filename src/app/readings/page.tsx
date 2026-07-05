@@ -48,7 +48,11 @@ export default function DailyReadings() {
   const [readingView, setReadingView] = useState<'text' | 'image'>('text');
 
   useEffect(() => {
-    setReadingView('text');
+    if (reading?.image_url) {
+      setReadingView('image');
+    } else {
+      setReadingView('text');
+    }
   }, [selectedDate, reading]);
 
   // Load persisted language from session

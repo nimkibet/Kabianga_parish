@@ -244,7 +244,7 @@ export default function AdminPage() {
   const [gospelEn, setGospelEn] = useState('');
   const [gospelSw, setGospelSw] = useState('');
 
-  // Track session
+  // Track session and inactivity auto-logout (30 minutes)
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -255,7 +255,35 @@ export default function AdminPage() {
       setSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    // Auto-logout after 30 minutes of inactivity
+    const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 mins
+    let timeoutId: NodeJS.Timeout;
+
+    const handleResetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            supabase.auth.signOut().then(() => {
+              alert('Imetoka: Umekuwa nje kwa dakika 30 bila shughuli yoyote. / Logged out: You have been logged out due to 30 minutes of inactivity.');
+            });
+          }
+        });
+      }, INACTIVITY_LIMIT);
+    };
+
+    // Setup activity listeners
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(e => window.addEventListener(e, handleResetTimer));
+    
+    // Start initial timer
+    handleResetTimer();
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeoutId);
+      events.forEach(e => window.removeEventListener(e, handleResetTimer));
+    };
   }, []);
 
   // Fetch data depending on activeTab

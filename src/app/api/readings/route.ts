@@ -415,44 +415,12 @@ export async function GET(request: NextRequest) {
         image_url: cachedReading.image_url || ''
       };
 
-      // OPTIMIZATION: Check if the day + 7 reading is already cached.
-      // If it is, we don't trigger the background preload worker.
-      const future7Obj = new Date(targetDateObj.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const future7Year = future7Obj.getUTCFullYear();
-      const future7Month = String(future7Obj.getUTCMonth() + 1).padStart(2, '0');
-      const future7Day = String(future7Obj.getUTCDate()).padStart(2, '0');
-      const future7Str = `${future7Year}-${future7Month}-${future7Day}`;
-      
-      const { data: hasFutureReading } = await supabase
-        .from('daily_readings')
-        .select('id')
-        .eq('reading_date', future7Str)
-        .maybeSingle();
-        
-      if (!hasFutureReading) {
-        // Trigger background preloader for the next 7 days (non-blocking)
-        setTimeout(() => {
-          preloadNextWeek(targetDateStr).catch(err => {
-            const msg = err instanceof Error ? err.message : String(err);
-            console.error('Background preloader error:', msg);
-          });
-        }, 0);
-      }
-      
       return NextResponse.json({ success: true, cached: true, data: formattedReading });
     }
     
     // 2. Not cached: scrape on-demand
     console.log(`Reading not cached. Scraping on-demand for ${targetDateStr}...`);
     const newRecord = await scrapeAndCache(targetDateStr, targetDateObj);
-    
-    // Trigger background preloader for the next 7 days (non-blocking)
-    setTimeout(() => {
-      preloadNextWeek(targetDateStr).catch(err => {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error('Background preloader error:', msg);
-      });
-    }, 0);
     
     return NextResponse.json({ success: true, cached: false, data: newRecord });
     
