@@ -73,7 +73,6 @@ export default function Navbar() {
               <Link href="/" className="text-xl font-bold tracking-tight text-foreground hover:opacity-90">
                 {brandingName}
               </Link>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Parish Community</p>
             </div>
           </div>
           
