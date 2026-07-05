@@ -50,8 +50,9 @@ export default function GalleryPage() {
 
         if (error) throw error;
 
-        if (data && data.length > 0) {
-          setImages(data);
+        if (data) {
+          // Merge newly uploaded images with default showcase images
+          setImages([...data, ...DEFAULT_IMAGES]);
         }
       } catch (err) {
         console.error('Error fetching gallery images:', err);

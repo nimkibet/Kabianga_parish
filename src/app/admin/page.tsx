@@ -287,10 +287,12 @@ export default function AdminPage() {
     };
   }, []);
 
-  // Fetch data depending on activeTab
+  // Fetch data and scroll to form when activeTab changes
   useEffect(() => {
     if (!session) return;
     fetchData();
+    // Scroll smoothly to form when switching sections/tabs
+    scrollToForm();
   }, [session, activeTab]);
 
   const showNotification = (type: 'success' | 'error', message: string) => {
