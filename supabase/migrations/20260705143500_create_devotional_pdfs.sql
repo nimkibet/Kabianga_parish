@@ -21,5 +21,7 @@ CREATE POLICY "Allow admin write access for devotional_pdfs" ON public.devotiona
 -- Seed initial records
 INSERT INTO public.devotional_pdfs (title, description, file_url, size)
 VALUES
-('Guide to Praying the Holy Rosary (English)', 'Step-by-step Dominican Rosary script with prayers, meditations, and diagrams.', 'https://www.usccb.org/prayer-and-worship/prayers-and-devotions/rosaries/upload/how-to-pray-the-rosary.pdf', '1.2 MB'),
-('Mwongozo wa Kusali Rozari Takatifu (Kiswahili)', 'Jinsi ya kusali Rozari Takatifu ya Bikira Maria hatua kwa hatua kwa lugha ya Kiswahili.', 'https://catholicreadings.org/wp-content/uploads/2024/05/Rozari-Takatifu-Swahili-Prayer-Book.pdf', '850 KB');
+('Guide to Praying the Holy Rosary (English)', 'Step-by-step Dominican Rosary guide customized for the parish.', '/devotionals/rosary_guide_english.pdf', '280 KB'),
+('Mwongozo wa Kusali Rozari Takatifu (Kiswahili)', 'Mwongozo kamili wa kusali Rozari Takatifu ya Bikira Maria kwa Kiswahili.', '/devotionals/rosary_guide_swahili.pdf', '150 KB'),
+('Chaplet of St. Michael (English)', 'Prayers and salutations for the Chaplet of St. Michael customized for the parish.', '/devotionals/chaplet_st_michael.pdf', '190 KB'),
+('Chaplet of the Seven Sorrows (English)', 'Meditations on the Seven Sorrows of Mary customized for the parish.', '/devotionals/chaplet_seven_sorrows.pdf', '290 KB');

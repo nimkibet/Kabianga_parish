@@ -46,3 +46,6 @@ next-env.d.ts
 /gooleocr
 /cloudinary credentials
 
+# large source files
+/CHRIST_IS_ALL_BOOK.pdf
+

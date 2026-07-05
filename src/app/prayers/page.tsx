@@ -28,18 +28,28 @@ interface DevotionalPdf {
 const DEFAULT_PDFS: DevotionalPdf[] = [
   {
     title: 'Guide to Praying the Holy Rosary (English)',
-    description: 'Step-by-step Dominican Rosary script with prayers, meditations, and diagrams.',
-    url: 'https://www.usccb.org/prayer-and-worship/prayers-and-devotions/rosaries/upload/how-to-pray-the-rosary.pdf',
-    file_url: 'https://www.usccb.org/prayer-and-worship/prayers-and-devotions/rosaries/upload/how-to-pray-the-rosary.pdf',
-    size: '1.2 MB'
-  } as any,
+    description: 'Step-by-step Dominican Rosary guide customized for the parish.',
+    file_url: '/devotionals/rosary_guide_english.pdf',
+    size: '280 KB'
+  },
   {
     title: 'Mwongozo wa Kusali Rozari Takatifu (Kiswahili)',
-    description: 'Mwongozo kamili wa kusali Rozari pamoja na siri zote na litania ya Bikira Maria.',
-    url: 'https://catholicreadings.org/wp-content/uploads/2024/05/Rozari-Takatifu-Swahili-Prayer-Book.pdf',
-    file_url: 'https://catholicreadings.org/wp-content/uploads/2024/05/Rozari-Takatifu-Swahili-Prayer-Book.pdf',
-    size: '850 KB'
-  } as any
+    description: 'Mwongozo kamili wa kusali Rozari Takatifu ya Bikira Maria kwa Kiswahili.',
+    file_url: '/devotionals/rosary_guide_swahili.pdf',
+    size: '150 KB'
+  },
+  {
+    title: 'Chaplet of St. Michael (English)',
+    description: 'Prayers and salutations for the Chaplet of St. Michael customized for the parish.',
+    file_url: '/devotionals/chaplet_st_michael.pdf',
+    size: '190 KB'
+  },
+  {
+    title: 'Chaplet of the Seven Sorrows (English)',
+    description: 'Meditations on the Seven Sorrows of Mary customized for the parish.',
+    file_url: '/devotionals/chaplet_seven_sorrows.pdf',
+    size: '290 KB'
+  }
 ];
 
 // Bilingual translations dictionary for the UI
@@ -119,6 +129,21 @@ export default function DevotionalPrayers() {
 
   const [pdfList, setPdfList] = useState<DevotionalPdf[]>([]);
   const [loadingPdfs, setLoadingPdfs] = useState(true);
+
+  // Set default mystery group based on today's day of week on mount
+  useEffect(() => {
+    const day = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const mysteryMapping: Record<number, 'joyful' | 'luminous' | 'sorrowful' | 'glorious'> = {
+      0: 'glorious',   // Sunday
+      1: 'joyful',     // Monday
+      2: 'sorrowful',   // Tuesday
+      3: 'glorious',   // Wednesday
+      4: 'luminous',   // Thursday
+      5: 'sorrowful',   // Friday
+      6: 'joyful'      // Saturday
+    };
+    setSelectedMysteryGroup(mysteryMapping[day] || 'joyful');
+  }, []);
 
   // Load Devotional PDFs dynamically from Supabase
   useEffect(() => {
