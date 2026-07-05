@@ -32,11 +32,31 @@ const DEFAULT_SLIDES: Slide[] = [
 export default function HeroCarousel() {
   const [slides, setSlides] = useState<Slide[]>(DEFAULT_SLIDES);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageFit, setImageFit] = useState<'cover' | 'contain' | 'fill'>('cover');
   
   // Touch coordinates for swiping
   const touchStart = useRef<number | null>(null);
   const touchEnd = useRef<number | null>(null);
   const autoPlayTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Load saved image fit preference on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('carousel_image_fit') as any;
+    if (saved && ['cover', 'contain', 'fill'].includes(saved)) {
+      setImageFit(saved);
+    }
+  }, []);
+
+  const toggleFit = () => {
+    const nextFit: Record<'cover' | 'contain' | 'fill', 'cover' | 'contain' | 'fill'> = {
+      cover: 'contain',
+      contain: 'fill',
+      fill: 'cover'
+    };
+    const next = nextFit[imageFit];
+    setImageFit(next);
+    localStorage.setItem('carousel_image_fit', next);
+  };
 
   useEffect(() => {
     async function fetchSlides() {
@@ -135,7 +155,9 @@ export default function HeroCarousel() {
               <img
                 src={slide.image_url}
                 alt={slide.title}
-                className="absolute inset-0 w-full h-full object-cover"
+                className={`absolute inset-0 w-full h-full ${
+                  imageFit === 'cover' ? 'object-cover' : imageFit === 'contain' ? 'object-contain' : 'object-fill'
+                }`}
                 loading={index === 0 ? 'eager' : 'lazy'}
               />
               
@@ -156,6 +178,17 @@ export default function HeroCarousel() {
           );
         })}
       </div>
+
+      {/* Image Fit Mode Toggle Button */}
+      <button
+        onClick={toggleFit}
+        className="absolute top-4 right-4 z-20 flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-black/45 hover:bg-black/60 text-white text-[10px] font-black uppercase tracking-wider backdrop-blur-md transition-all border border-white/10 shadow-lg active:scale-95 touch-target"
+        aria-label="Change image fit style"
+      >
+        <span>
+          {imageFit === 'cover' ? '🔍 Cover (Crop)' : imageFit === 'contain' ? '📦 Contain (Fit)' : '↔️ Stretch (Fill)'}
+        </span>
+      </button>
 
       {/* Manual Navigation Controls (Hidden on small screens, click targets > 44px) */}
       <button
