@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS public.giving_projects (
     current_amount NUMERIC DEFAULT 0,
     paybill_number TEXT DEFAULT '247247', -- default M-Pesa paybill
     paybill_account TEXT,              -- e.g., "SANCTUARY"
+    image_url TEXT,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

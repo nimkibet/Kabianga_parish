@@ -200,6 +200,7 @@ export default function AdminPage() {
   const [gpTarget, setGpTarget] = useState('');
   const [gpCurrent, setGpCurrent] = useState('0');
   const [gpPaybillAcc, setGpPaybillAcc] = useState('');
+  const [gpImageUrl, setGpImageUrl] = useState('');
 
   // Bulletin Form
   const [bullTitle, setBullTitle] = useState('');
@@ -410,7 +411,15 @@ export default function AdminPage() {
       } else if (activeTab === 'giving') {
         const { data, error } = await supabase.from('giving_projects').select('*').order('created_at', { ascending: false });
         if (error) throw error;
-        setGivingProjects(data || []);
+        
+        const { data: settingsData } = await supabase.from('site_settings').select('key, value').like('key', 'project_image_%');
+        const imageMap = new Map(settingsData?.map(item => [item.key.replace('project_image_', ''), item.value]) || []);
+        
+        const mapped = (data || []).map(p => ({
+          ...p,
+          image_url: imageMap.get(p.id) || ''
+        }));
+        setGivingProjects(mapped);
       } else if (activeTab === 'registrations') {
         const { data, error } = await supabase.from('sacramental_registrations').select('*').order('created_at', { ascending: false });
         if (error) throw error;
@@ -1087,15 +1096,35 @@ export default function AdminPage() {
   const handleAddGiving = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from('giving_projects').insert({
-        title: gpTitle, description: gpDesc, target_amount: parseFloat(gpTarget),
-        current_amount: parseFloat(gpCurrent) || 0, paybill_account: gpPaybillAcc
-      });
+      const { data, error } = await supabase.from('giving_projects').insert({
+        title: gpTitle,
+        description: gpDesc,
+        target_amount: parseFloat(gpTarget),
+        current_amount: parseFloat(gpCurrent) || 0,
+        paybill_account: gpPaybillAcc
+      }).select().single();
+      
       if (error) throw error;
+
+      if (gpImageUrl && data?.id) {
+        const { error: errImg } = await supabase.from('site_settings').insert({
+          key: `project_image_${data.id}`,
+          value: gpImageUrl
+        });
+        if (errImg) console.warn("Failed to save project image:", errImg);
+      }
+
       showNotification('success', 'Project added!');
-      setGpTitle(''); setGpDesc(''); setGpTarget(''); setGpCurrent('0'); setGpPaybillAcc('');
+      setGpTitle('');
+      setGpDesc('');
+      setGpTarget('');
+      setGpCurrent('0');
+      setGpPaybillAcc('');
+      setGpImageUrl('');
       fetchData();
-    } catch (err: any) { showNotification('error', err.message); }
+    } catch (err: any) {
+      showNotification('error', err.message);
+    }
   };
 
   const handleAddBulletin = async (e: React.FormEvent) => {
@@ -1250,6 +1279,11 @@ export default function AdminPage() {
     try {
       const { error } = await supabase.from(table).delete().eq('id', id);
       if (error) throw error;
+      
+      if (table === 'giving_projects') {
+        await supabase.from('site_settings').delete().eq('key', `project_image_${id}`);
+      }
+
       showNotification('success', 'Item deleted!');
       fetchData();
     } catch (err: any) { showNotification('error', err.message); }
@@ -1977,6 +2011,34 @@ export default function AdminPage() {
                   <div><label className="text-[10px] font-bold">Current Amount Raised</label><input type="number" value={gpCurrent} onChange={e => setGpCurrent(e.target.value)} className="w-full px-3 py-1.5 border rounded-lg text-xs" /></div>
                 </div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Custom Paybill Account Name</label><input type="text" placeholder="e.g. TILING" value={gpPaybillAcc} onChange={e => setGpPaybillAcc(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                
+                {/* Project Cover Image */}
+                <div className="bg-muted/40 p-3 rounded-xl border border-border space-y-2">
+                  <label className="text-[10px] font-bold text-primary uppercase tracking-wider block">
+                    Project Cover Image (Optional)
+                  </label>
+                  {gpImageUrl ? (
+                    <div className="space-y-2">
+                      <div className="relative aspect-video rounded border overflow-hidden bg-black/10">
+                        <img src={gpImageUrl} className="object-cover w-full h-full" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setGpImageUrl('')}
+                        className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-bold rounded-lg"
+                      >
+                        Remove Image
+                      </button>
+                    </div>
+                  ) : (
+                    <CloudinaryUploadWidget
+                      onUploadSuccess={setGpImageUrl}
+                      buttonText="Select Project Image"
+                      className="w-full bg-primary hover:bg-primary-hover text-xs py-2"
+                    />
+                  )}
+                </div>
+                
                 <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Project</button>
               </form>
             )}
@@ -2329,6 +2391,11 @@ export default function AdminPage() {
                 {givingProjects.map(gp => (
                   <div key={gp.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
                     <div>
+                      {gp.image_url && (
+                        <div className="relative aspect-video rounded-lg overflow-hidden border mb-2 bg-black/10">
+                          <img src={gp.image_url} className="object-cover w-full h-full" alt={gp.title} />
+                        </div>
+                      )}
                       <h4 className="font-extrabold text-sm">{gp.title}</h4>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{gp.description}</p>
                       <div className="flex justify-between items-center text-[10px] font-bold mt-2 text-primary border-t pt-2">
