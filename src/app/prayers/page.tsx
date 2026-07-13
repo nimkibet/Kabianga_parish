@@ -122,7 +122,7 @@ const translations = {
 
 export default function DevotionalPrayers() {
   const [activeTab, setActiveTab] = useState<'rosary' | 'devotionals' | 'pdfs'>('rosary');
-  const [selectedRosary, setSelectedRosary] = useState<'marian' | 'stmichael' | 'sevensorrows'>('marian');
+  const [selectedRosary, setSelectedRosary] = useState<'marian' | 'stmichael' | 'sevensorrows' | 'divinemercy'>('marian');
   const [currentBeadIndex, setCurrentBeadIndex] = useState(0);
   const [rosaryLanguage, setRosaryLanguage] = useState<'english' | 'swahili'>('english');
   const [selectedMysteryGroup, setSelectedMysteryGroup] = useState<'joyful' | 'luminous' | 'sorrowful' | 'glorious'>('joyful');
@@ -493,11 +493,139 @@ export default function DevotionalPrayers() {
     return list;
   };
 
+  const getBeadPrayerName = (b: Bead) => {
+    if (b.type === 'our-father') return 'Baba Yetu';
+    if (b.type === 'hail-mary') return 'Salamu Maria';
+    if (b.type === 'glory-be') return 'Atukuzwe Baba';
+    if (b.type === 'creed' && selectedRosary === 'marian') return 'Kanuni ya Imani';
+    if (b.type === 'conclusion' && selectedRosary === 'marian') return 'Salamu Malkia';
+    return b.prayerName;
+  };
+
+  const buildDivineMercyBeads = (): Bead[] => {
+    const list: Bead[] = [];
+    
+    // 1. Crucifix (Opening Prayer)
+    list.push({
+      id: 1, type: 'creed', label: rosaryLanguage === 'english' ? '1. Crucifix (Opening Prayer)' : '1. Msalaba (Sala ya Kuanzia)',
+      prayerName: rosaryLanguage === 'english' ? 'Opening Prayer & Creed' : 'Sala ya Kufungua na Nasadiki',
+      prayerTextEn: 'You expired, Jesus, but the source of life gushed forth for souls, and the ocean of mercy opened up for the whole world. O Fount of Life, unfathomable Divine Mercy, envelop the whole world and empty Yourself out upon us.\n\nThen say the Apostles’ Creed:\nI believe in God, the Father almighty, Creator of heaven and earth...',
+      prayerTextSw: 'Ewe Yesu, ulikufa lakini chemchemi ya uzima ilibubujika kwa ajili ya roho, na bahari ya huruma ikafunguka kwa ajili ya dunia nzima. Ee Chemchemi ya Uzima, Huruma ya Mungu isiyo na mwisho, funika dunia nzima na ujimwage juu yetu.\n\nKisha sali Nasadiki kwa Mungu Baba Mwenyezi, Muumba wa mbingu na dunia...',
+      mysteryTextEn: 'Begin at the Crucifix. Make the Sign of the Cross, pray the opening prayer, and recite the Apostles’ Creed.',
+      mysteryTextSw: 'Anza kwenye Msalaba. Jitie Alama ya Msalaba, sali sala ya kuanzia na usali Nasadiki.',
+      x: 200, y: 440
+    });
+
+    // 2. First Large Bead (Our Father)
+    list.push({
+      id: 2, type: 'our-father', label: rosaryLanguage === 'english' ? '2. First Large Bead (Our Father)' : '2. Punje Kubwa ya Kwanza (Baba Yetu)',
+      prayerName: prayersTemplates.ourFather.nameEn,
+      prayerTextEn: prayersTemplates.ourFather.en,
+      prayerTextSw: prayersTemplates.ourFather.sw,
+      mysteryTextEn: 'Pray one Our Father.',
+      mysteryTextSw: 'Sali Baba Yetu moja.',
+      x: 200, y: 395
+    });
+
+    // 3. First Small Bead (Hail Mary)
+    list.push({
+      id: 3, type: 'hail-mary', label: rosaryLanguage === 'english' ? '3. First Small Bead (Hail Mary)' : '3. Punje Ndogo ya Kwanza (Salamu Maria)',
+      prayerName: prayersTemplates.hailMary.nameEn,
+      prayerTextEn: prayersTemplates.hailMary.en,
+      prayerTextSw: prayersTemplates.hailMary.sw,
+      mysteryTextEn: 'Pray one Hail Mary.',
+      mysteryTextSw: 'Sali Salamu Maria moja.',
+      x: 200, y: 360
+    });
+
+    // 4. Second Small Bead (Additional Opening Prayers)
+    list.push({
+      id: 4, type: 'hail-mary', label: rosaryLanguage === 'english' ? '4. Second Small Bead (Closing Opening)' : '4. Punje Ndogo ya Pili (Kumalizia Mwanzo)',
+      prayerName: rosaryLanguage === 'english' ? 'Opening Conclusion' : 'Kuhitimisha Mwanzo',
+      prayerTextEn: 'O Blood and Water, which gushed forth from the Heart of Jesus as a fount of Mercy for us, I trust in You! (3 times)',
+      prayerTextSw: 'Ee Damu na Maji, zilizobubujika kutoka Moyoni mwa Yesu kama chemchemi ya Huruma kwa ajili yetu, ninakutumainia Wewe! (Mara 3)',
+      mysteryTextEn: 'Pray the Blood and Water invocation 3 times.',
+      mysteryTextSw: 'Sali sala ya Ee Damu na Maji mara 3.',
+      x: 200, y: 335
+    });
+
+    list.push({
+      id: 5, type: 'glory-be', label: rosaryLanguage === 'english' ? '5. Chain Space (Glory Be)' : '5. Nafasi/Kamba (Atukuzwe Baba)',
+      prayerName: prayersTemplates.gloryBe.nameEn,
+      prayerTextEn: prayersTemplates.gloryBe.en,
+      prayerTextSw: prayersTemplates.gloryBe.sw,
+      mysteryTextEn: 'Recite the Glory Be.',
+      mysteryTextSw: 'Sali Atukuzwe Baba.',
+      x: 200, y: 290
+    });
+
+    // Decades (5 Decades on same beads map)
+    let beadId = 6;
+    for (let decade = 0; decade < 5; decade++) {
+      const ofIndex = decade * 12;
+      const ofAngle = 90 + ((ofIndex + 1) * (360 / 60)) * (Math.PI / 180);
+      
+      list.push({
+        id: beadId++, type: 'our-father', label: rosaryLanguage === 'english' ? `Decade ${decade+1} - Eternal Father` : `Fungu la ${decade+1} - Baba wa Milele`,
+        prayerName: rosaryLanguage === 'english' ? 'Eternal Father Prayer' : 'Sala ya Baba wa Milele',
+        prayerTextEn: 'Eternal Father, I offer You the Body and Blood, Soul and Divinity of Your Dearly Beloved Son, Our Lord, Jesus Christ, in atonement for our sins and those of the whole world.',
+        prayerTextSw: 'Baba wa Milele, ninakutolea Mwili na Damu, Roho na Umungu wa Mwanao Mpendwa sana, Bwana wetu Yesu Kristo, kwa ondoleo la dhambi zetu na za dunia nzima.',
+        mysteryTextEn: `Announce the ${decade+1} Decade and pray the Eternal Father prayer on the large bead.`,
+        mysteryTextSw: `Tangaza Fungu la ${decade+1} na usali Baba wa Milele kwenye punje kubwa.`,
+        x: Math.round(200 + 115 * Math.cos(ofAngle)),
+        y: Math.round(150 + 80 * Math.sin(ofAngle))
+      });
+
+      for (let hm = 0; hm < 10; hm++) {
+        const hmIndex = decade * 12 + 1 + hm;
+        const hmAngle = 90 + ((hmIndex + 1) * (360 / 60)) * (Math.PI / 180);
+        list.push({
+          id: beadId++, type: 'hail-mary', label: rosaryLanguage === 'english' ? `Decade ${decade+1} - Passion Bead ${hm+1}` : `Fungu la ${decade+1} - Punje ya Mateso ${hm+1}`,
+          prayerName: rosaryLanguage === 'english' ? 'Sorrowful Passion Prayer' : 'Sala ya Mateso Makali',
+          prayerTextEn: 'For the sake of His sorrowful Passion, have mercy on us and on the whole world.',
+          prayerTextSw: 'Kwa ajili ya mateso makali ya Yesu, utuhurumie sisi na dunia nzima.',
+          mysteryTextEn: `Decade ${decade+1} • Passion Bead ${hm+1} of 10`,
+          mysteryTextSw: `Fungu la ${decade+1} • Mateso ya Yesu ${hm+1} ya 10`,
+          x: Math.round(200 + 115 * Math.cos(hmAngle)),
+          y: Math.round(150 + 80 * Math.sin(hmAngle))
+        });
+      }
+
+      const gbIndex = decade * 12 + 11;
+      const gbAngle = 90 + ((gbIndex + 1) * (360 / 60)) * (Math.PI / 180);
+      list.push({
+        id: beadId++, type: 'glory-be', label: rosaryLanguage === 'english' ? `Decade ${decade+1} - Amen Space` : `Fungu la ${decade+1} - Nafasi ya Amina`,
+        prayerName: 'Transition Space',
+        prayerTextEn: 'Prepare to begin the next decade.',
+        prayerTextSw: 'Jitayarishe kuanza fungu linalofuata.',
+        mysteryTextEn: 'Take a moment of silent reflection on Christ\'s mercy.',
+        mysteryTextSw: 'Tafakari kwa kimya huruma kuu ya Kristo.',
+        x: Math.round(200 + 115 * Math.cos(gbAngle)),
+        y: Math.round(150 + 80 * Math.sin(gbAngle))
+      });
+    }
+
+    // Concluding prayers (Center Medal Piece)
+    list.push({
+      id: beadId++, type: 'conclusion', label: rosaryLanguage === 'english' ? 'Concluding Prayer' : 'Sala ya Kuhitimisha',
+      prayerName: rosaryLanguage === 'english' ? 'Holy God (3 times)' : 'Mungu Mtakatifu (Mara 3)',
+      prayerTextEn: 'Holy God, Holy Mighty One, Holy Immortal One, have mercy on us and on the whole world. (3 times)\n\nOptional Closing Prayer:\nO Eternal God, in whom mercy is endless and the treasury of compassion inexhaustible, look kindly upon us and increase Your mercy in us, that in difficult moments we might not despair nor become despondent, but with great confidence submit ourselves to Your holy will, which is Love and Mercy itself. Amen.',
+      prayerTextSw: 'Mungu Mtakatifu, Mungu Mwenye nguvu, Mungu Usiye na kufa, utuhurumie sisi na dunia nzima. (Mara 3)\n\nSala ya Kuhitimisha (Hiari):\nEe Mungu wa Milele, ambaye huruma yako haina mwisho na hazina ya mapendo haipungui, utuangalie kwa wema na kuongeza huruma yako ndani yetu, ili katika nyakati ngumu tusikate tamaa wala kufadhaika, bali kwa uaminifu mkubwa tujinyenyekeze chini ya mapenzi yako matakatifu, ambayo ni Upendo na Huruma yenyewe. Amina.',
+      mysteryTextEn: 'Conclude the Chaplet by praying the Holy God invocation 3 times and the closing prayer.',
+      mysteryTextSw: 'Kamilisha sala kwa kusali Mungu Mtakatifu mara 3 na sala ya kufunga.',
+      x: 200, y: 235
+    });
+
+    return list;
+  };
+
   const beads = selectedRosary === 'marian'
     ? buildMarianBeads()
     : selectedRosary === 'stmichael'
     ? buildStMichaelBeads()
-    : buildSevenSorrowsBeads();
+    : selectedRosary === 'sevensorrows'
+    ? buildSevenSorrowsBeads()
+    : buildDivineMercyBeads();
 
   const currentBead = beads[currentBeadIndex] || beads[0];
 
@@ -515,7 +643,7 @@ export default function DevotionalPrayers() {
     }
   };
 
-  const selectRosaryType = (type: 'marian' | 'stmichael' | 'sevensorrows') => {
+  const selectRosaryType = (type: 'marian' | 'stmichael' | 'sevensorrows' | 'divinemercy') => {
     setSelectedRosary(type);
     setCurrentBeadIndex(0);
   };
@@ -599,6 +727,17 @@ export default function DevotionalPrayers() {
                 >
                   <span className="font-extrabold text-foreground text-xs">{t.sevensorrowsTitle}</span>
                   <span>{rosaryLanguage === 'english' ? '7 Meditations on Our Lady of Sorrows.' : 'Tafakari 7 za Masikitiko ya Bikira Maria.'}</span>
+                </button>
+                <button
+                  onClick={() => selectRosaryType('divinemercy')}
+                  className={`w-full text-left p-3 rounded-xl border text-xs font-semibold flex flex-col gap-1 transition-all ${
+                    selectedRosary === 'divinemercy'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border bg-transparent text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                  }`}
+                >
+                  <span className="font-extrabold text-foreground text-xs">{rosaryLanguage === 'english' ? 'Chaplet of Divine Mercy' : 'Koreti ya Huruma ya Mungu'}</span>
+                  <span>{rosaryLanguage === 'english' ? 'Prayed on standard Rosary beads. Focuses on the mercy of God.' : 'Inasaliwa kwa punje za rozari. Huzingatia huruma ya Mungu.'}</span>
                 </button>
               </div>
 
@@ -763,7 +902,7 @@ export default function DevotionalPrayers() {
               {/* Active Prayer Text */}
               <div className="p-6 sm:p-8 flex-1 flex flex-col justify-center space-y-4 min-h-[220px]">
                 <h3 className="font-extrabold text-base text-primary border-b border-primary/10 pb-1 w-fit">
-                  {rosaryLanguage === 'english' ? currentBead.prayerName : (selectedRosary === 'marian' ? prayersTemplates[currentBead.type as keyof typeof prayersTemplates]?.nameSw || currentBead.prayerName : currentBead.prayerName)}
+                  {rosaryLanguage === 'english' ? currentBead.prayerName : getBeadPrayerName(currentBead)}
                 </h3>
                 <p className="text-sm sm:text-base text-foreground/90 leading-relaxed whitespace-pre-line italic font-serif">
                   {rosaryLanguage === 'english' ? currentBead.prayerTextEn : currentBead.prayerTextSw}

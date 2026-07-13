@@ -88,6 +88,7 @@ export default function AdminPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [currentOverrideColor, setCurrentOverrideColor] = useState('auto');
 
   // Tab control
   const [activeTab, setActiveTab] = useState<
@@ -326,6 +327,7 @@ export default function AdminPage() {
           if (settingsMap.has('contact_phone')) setPhoneSetting(settingsMap.get('contact_phone')!);
           if (settingsMap.has('contact_address')) setAddressSetting(settingsMap.get('contact_address')!);
           if (settingsMap.has('office_hours')) setHoursSetting(settingsMap.get('office_hours')!);
+          if (settingsMap.has('theme_color_override')) setCurrentOverrideColor(settingsMap.get('theme_color_override')!);
         }
       }
 
@@ -496,6 +498,20 @@ export default function AdminPage() {
       setAuthError(err.message || 'Failed to update password.');
     } finally {
       setAuthLoading(false);
+    }
+  };
+
+  const handleSaveThemeOverride = async (color: string) => {
+    try {
+      const { error } = await supabase.from('site_settings').upsert(
+        { key: 'theme_color_override', value: color },
+        { onConflict: 'key' }
+      );
+      if (error) throw error;
+      setCurrentOverrideColor(color);
+      showNotification('success', `Theme overridden to ${color === 'auto' ? 'Calendar Sync' : color.toUpperCase()}`);
+    } catch (err: any) {
+      showNotification('error', `Failed to set theme override: ${err.message}`);
     }
   };
 
@@ -2474,22 +2490,117 @@ export default function AdminPage() {
 
             {/* THEME LIST */}
             {activeTab === 'theme' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {themes.map(t => (
-                  <div key={t.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
-                    <div>
-                      <h4 className="font-extrabold text-sm">{t.name}</h4>
-                      <div className="flex gap-2 mt-2">
-                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.primary_color }} />
-                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.secondary_color }} />
-                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.background_color }} />
-                        <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.foreground_color }} />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">Months: {t.start_month} to {t.end_month}</p>
-                    </div>
-                    <button onClick={() => handleDelete('theme_settings', t.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Remove Theme</button>
+              <div className="space-y-6 w-full animate-fade-in">
+                {/* Liturgical Color Quick Override Card */}
+                <div className="bg-card border border-border p-6 rounded-2xl shadow-sm space-y-4">
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-base text-foreground">Liturgical Color Override</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Override the dynamic web theme with a specific liturgical color. Select "Calendar Sync" to follow the liturgical calendar automatically.
+                    </p>
                   </div>
-                ))}
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
+                    {/* Green Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleSaveThemeOverride('green')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all ${
+                        currentOverrideColor === 'green'
+                          ? 'border-emerald-600 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-600/35'
+                          : 'border-border bg-transparent hover:bg-muted/40 text-foreground'
+                      }`}
+                    >
+                      <span className="w-8 h-8 rounded-full bg-[#16a34a] border shadow-sm mb-2" />
+                      <span className="text-xs font-bold">Green</span>
+                      <span className="text-[10px] text-muted-foreground mt-0.5">Ordinary Time</span>
+                    </button>
+
+                    {/* Purple Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleSaveThemeOverride('purple')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all ${
+                        currentOverrideColor === 'purple'
+                          ? 'border-purple-600 bg-purple-50 text-purple-950 ring-2 ring-purple-600/35'
+                          : 'border-border bg-transparent hover:bg-muted/40 text-foreground'
+                      }`}
+                    >
+                      <span className="w-8 h-8 rounded-full bg-[#7c3aed] border shadow-sm mb-2" />
+                      <span className="text-xs font-bold">Purple</span>
+                      <span className="text-[10px] text-muted-foreground mt-0.5">Lent / Advent</span>
+                    </button>
+
+                    {/* White Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleSaveThemeOverride('white')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all ${
+                        currentOverrideColor === 'white'
+                          ? 'border-amber-600 bg-amber-50/50 text-amber-950 ring-2 ring-amber-600/35'
+                          : 'border-border bg-transparent hover:bg-muted/40 text-foreground'
+                      }`}
+                    >
+                      <span className="w-8 h-8 rounded-full bg-[#fbbf24] border shadow-sm mb-2" />
+                      <span className="text-xs font-bold">White / Gold</span>
+                      <span className="text-[10px] text-muted-foreground mt-0.5">Solemnities</span>
+                    </button>
+
+                    {/* Red Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleSaveThemeOverride('red')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all ${
+                        currentOverrideColor === 'red'
+                          ? 'border-red-600 bg-red-50 text-red-950 ring-2 ring-red-600/35'
+                          : 'border-border bg-transparent hover:bg-muted/40 text-foreground'
+                      }`}
+                    >
+                      <span className="w-8 h-8 rounded-full bg-[#dc2626] border shadow-sm mb-2" />
+                      <span className="text-xs font-bold">Red</span>
+                      <span className="text-[10px] text-muted-foreground mt-0.5">Martyrs / Passion</span>
+                    </button>
+
+                    {/* Auto Sync Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleSaveThemeOverride('auto')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center col-span-2 sm:col-span-1 transition-all ${
+                        currentOverrideColor === 'auto'
+                          ? 'border-primary bg-primary/5 text-primary ring-2 ring-primary/35'
+                          : 'border-border bg-transparent hover:bg-muted/40 text-foreground'
+                      }`}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 via-purple-500 to-amber-500 border shadow-sm mb-2 flex items-center justify-center text-white text-[9px] font-black uppercase">
+                        Auto
+                      </div>
+                      <span className="text-xs font-bold">Calendar Sync</span>
+                      <span className="text-[10px] text-muted-foreground mt-0.5">Dynamic Auto</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Season Settings list */}
+                <div className="space-y-3 pt-2">
+                  <h3 className="font-extrabold text-sm text-foreground">Standard Season Background Colors</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {themes.map(t => (
+                      <div key={t.id} className="bg-card border p-4 rounded-xl shadow-sm flex flex-col justify-between space-y-3">
+                        <div>
+                          <h4 className="font-extrabold text-sm">{t.name}</h4>
+                          <div className="flex gap-2 mt-2">
+                            <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.primary_color }} />
+                            <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.secondary_color }} />
+                            <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.background_color }} />
+                            <span className="w-6 h-6 rounded-full border shadow-sm" style={{ backgroundColor: t.foreground_color }} />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">Months: {t.start_month} to {t.end_month}</p>
+                        </div>
+                        <button onClick={() => handleDelete('theme_settings', t.id)} className="w-full py-1.5 bg-destructive/10 text-destructive text-xs font-semibold rounded-lg">Remove Theme</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 

@@ -292,13 +292,11 @@ ON CONFLICT DO NOTHING;
 INSERT INTO public.service_schedules (title, day_of_week, start_time, end_time, details, type)
 VALUES
 ('Swahili Service', 0, '09:30:00', '11:30:00', 'Misa ya Kiswahili - Main Center', 'Mass'),
-('Adoration & Mass', 4, '15:00:00', '16:30:00', 'Eucharistic Adoration and Holy Mass', 'Mass'),
-('Daily Mass', 1, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass'),
-('Daily Mass', 2, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass'),
-('Daily Mass', 3, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass'),
-('Daily Mass', 4, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass'),
-('Daily Mass', 5, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass'),
-('Daily Mass', 6, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass')
+('Adoration & Mass', 3, '15:00:00', '16:30:00', 'Eucharistic Adoration and Holy Mass', 'Mass'),
+('Daily Mass (Tuesday)', 2, '07:00:00', '07:30:00', 'Morning Holy Mass (Tuesday)', 'Mass'),
+('Daily Mass (Thursday)', 4, '07:00:00', '07:30:00', 'Morning Holy Mass (Thursday)', 'Mass'),
+('Daily Mass (Friday)', 5, '07:00:00', '07:30:00', 'Morning Holy Mass (Friday)', 'Mass'),
+('Daily Mass (Saturday)', 6, '07:00:00', '07:30:00', 'Morning Holy Mass (Saturday)', 'Mass')
 ON CONFLICT DO NOTHING;
 
 -- Seed default Societies

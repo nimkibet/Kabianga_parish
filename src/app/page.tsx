@@ -133,15 +133,18 @@ export default function Home() {
         // Fallback local schema
         setSchedules([
           { title: 'Swahili Service', day_of_week: 0, start_time: '09:30:00', end_time: '11:30:00', details: 'Misa ya Kiswahili - Main Center', type: 'Mass' },
-          { title: 'Adoration & Mass', day_of_week: 4, start_time: '15:00:00', end_time: '16:30:00', details: 'Eucharistic Adoration and Holy Mass', type: 'Mass' },
-          ...[1, 2, 3, 4, 5, 6].map(day => ({
-            title: 'Daily Mass',
-            day_of_week: day,
-            start_time: '07:00:00',
-            end_time: '07:30:00',
-            details: 'Daily Morning Mass (30 mins)',
-            type: 'Mass'
-          }))
+          { title: 'Adoration & Mass', day_of_week: 3, start_time: '15:00:00', end_time: '16:30:00', details: 'Eucharistic Adoration and Holy Mass', type: 'Mass' },
+          ...[2, 4, 5, 6].map(day => {
+            const dayNames = ['', '', 'Tuesday', '', 'Thursday', 'Friday', 'Saturday'];
+            return {
+              title: `Daily Mass (${dayNames[day]})`,
+              day_of_week: day,
+              start_time: '07:00:00',
+              end_time: '07:30:00',
+              details: `Morning Holy Mass (${dayNames[day]})`,
+              type: 'Mass'
+            };
+          })
         ]);
       }
     } catch (err: any) {

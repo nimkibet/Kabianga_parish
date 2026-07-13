@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getLiturgicalSeason, LITURGICAL_THEMES } from '@/lib/liturgicalSeason';
+import { supabase } from '@/lib/supabase';
 
 /**
  * ThemeProvider applies the correct styling (liturgical colors determined by today's Daily Reading)
@@ -71,9 +72,22 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
     setThemeStyles(generateStyles(initialColor));
 
-    // 2. Fetch today's reading to check if there is an active liturgical color (with admin override support)
+    // 2. Fetch active liturgical theme color check with admin override support
     async function fetchColor() {
       try {
+        // Query theme override from database
+        const { data: overrideData, error: overrideError } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'theme_color_override')
+          .maybeSingle();
+
+        if (!overrideError && overrideData && overrideData.value && overrideData.value !== 'auto') {
+          setThemeStyles(generateStyles(overrideData.value));
+          return;
+        }
+
+        // Fallback to dynamic daily reading color
         const options = { timeZone: 'Africa/Nairobi', year: 'numeric' as const, month: '2-digit' as const, day: '2-digit' as const };
         const formatter = new Intl.DateTimeFormat('en-CA', options);
         const todayStr = formatter.format(new Date()); // YYYY-MM-DD
