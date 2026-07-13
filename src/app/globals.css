@@ -2,6 +2,8 @@
 @import "tailwindcss";
 
 :root {
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
   --background: #faf5ff;
   --foreground: #1e1b4b;
   --muted: #f3e8ff;
@@ -15,6 +17,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    --primary: #a78bfa;
+    --primary-hover: #8b5cf6;
     --background: #0f0b21;
     --foreground: #f3e8ff;
     --muted: #1f1638;
@@ -26,8 +30,8 @@
 }
 
 @theme {
-  --color-primary: #7c3aed;
-  --color-primary-hover: #6d28d9;
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-on-primary: #ffffff;
   --color-secondary: #a78bfa;
   --color-accent: #16a34a;
@@ -39,7 +43,7 @@
   --color-border: var(--border);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-ring: #7c3aed;
+  --color-ring: var(--primary);
   --font-sans: 'Inter', system-ui, sans-serif;
 }
 

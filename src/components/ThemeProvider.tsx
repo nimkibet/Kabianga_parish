@@ -42,6 +42,8 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       }
 
       const declarations = [
+        ['--primary', theme.primary],
+        ['--primary-hover', theme.primaryHover],
         ['--color-primary', theme.primary],
         ['--color-primary-hover', theme.primaryHover],
         ['--color-on-primary', '#ffffff'],

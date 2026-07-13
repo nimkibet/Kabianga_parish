@@ -74,6 +74,8 @@ export default function RootLayout({
   // Clean Light Mode default fallback styles (white background, purple primary)
   const initialStyles = `
     :root {
+      --primary: #7c3aed !important;
+      --primary-hover: #6d28d9 !important;
       --color-primary: #7c3aed !important;
       --color-primary-hover: #6d28d9 !important;
       --color-on-primary: #ffffff !important;
