@@ -36,9 +36,9 @@ export default function Jumuiyas() {
   // Filter logic
   const filteredJumuiyas = jumuiyas.filter((j) => {
     const matchesSearch =
-      j.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      j.leader_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      j.zone.toLowerCase().includes(searchTerm.toLowerCase());
+      (j.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (j.leader_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (j.zone || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesZone = selectedZone === 'All' || j.zone === selectedZone;
 
@@ -146,20 +146,26 @@ export default function Jumuiyas() {
                 {/* Leader Contact */}
                 <div className="border-t border-border/60 pt-3">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Leader / Mwenyekiti</p>
-                  <p className="text-xs font-bold text-foreground">{j.leader_name}</p>
+                  <p className="text-xs font-bold text-foreground">{j.leader_name || 'Vacant / To be added'}</p>
                 </div>
 
               </div>
 
               {/* Call Action Button */}
-              <a
-                href={`tel:${j.leader_phone}`}
-                className="touch-target w-full bg-primary text-white text-xs font-bold py-2.5 rounded-xl shadow-sm hover:bg-primary-hover active:scale-95 transition-all flex items-center justify-center space-x-1.5"
-              >
-                <Phone className="w-4 h-4" />
-                <span>Call {j.leader_phone}</span>
-                <ArrowUpRight className="w-3.5 h-3.5 opacity-60" />
-              </a>
+              {j.leader_phone ? (
+                <a
+                  href={`tel:${j.leader_phone}`}
+                  className="touch-target w-full bg-primary text-white text-xs font-bold py-2.5 rounded-xl shadow-sm hover:bg-primary-hover active:scale-95 transition-all flex items-center justify-center space-x-1.5"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>Call {j.leader_phone}</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 opacity-60" />
+                </a>
+              ) : (
+                <div className="w-full text-center bg-muted text-muted-foreground text-xs font-semibold py-2 rounded-xl border border-border/20 italic">
+                  No contact info
+                </div>
+              )}
 
             </div>
           ))}

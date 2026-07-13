@@ -132,10 +132,16 @@ export default function Home() {
       } else {
         // Fallback local schema
         setSchedules([
-          { title: 'English Mass', day_of_week: 0, start_time: '08:00:00', end_time: '10:00:00', details: 'Holy Communion & Sermon', type: 'Mass' },
-          { title: 'Kiswahili Mass', day_of_week: 0, start_time: '10:30:00', end_time: '12:30:00', details: 'Ibada ya Asubuhi na Mahubiri', type: 'Mass' },
-          { title: 'Youth Mass', day_of_week: 0, start_time: '14:00:00', end_time: '16:00:00', details: 'Praise, Worship & Topical discussions', type: 'Mass' },
-          { title: 'Confessions', day_of_week: 6, start_time: '15:00:00', end_time: '17:00:00', details: 'Sacrament of Reconciliation', type: 'Confession' },
+          { title: 'Swahili Service', day_of_week: 0, start_time: '09:30:00', end_time: '11:30:00', details: 'Misa ya Kiswahili - Main Center', type: 'Mass' },
+          { title: 'Adoration & Mass', day_of_week: 4, start_time: '15:00:00', end_time: '16:30:00', details: 'Eucharistic Adoration and Holy Mass', type: 'Mass' },
+          ...[1, 2, 3, 4, 5, 6].map(day => ({
+            title: 'Daily Mass',
+            day_of_week: day,
+            start_time: '07:00:00',
+            end_time: '07:30:00',
+            details: 'Daily Morning Mass (30 mins)',
+            type: 'Mass'
+          }))
         ]);
       }
     } catch (err: any) {

@@ -21,57 +21,28 @@ CREATE POLICY "Allow admin write access for centers" ON public.centers FOR ALL T
 INSERT INTO public.centers (name, description, leaders, images)
 VALUES
 (
-  'St. Peter''s Kabianga Central',
-  'The Parish Cathedral Center and headquarters. Located adjacent to Kabianga University, St. Peter''s serves as the administrative heart of the parish and hosts the largest community services.',
-  '[
-    {"role": "Catechist", "name": "Mr. Joseph Ngetich", "phone": "0711122233"},
-    {"role": "Chairman", "name": "Mr. Charles Langat", "phone": "0722233344"},
-    {"role": "Secretary", "name": "Mrs. Hellen Kirui", "phone": "0733344455"},
-    {"role": "Treasurer", "name": "Mr. David Koech", "phone": "0744455566"}
-  ]'::jsonb,
-  ARRAY[
-    'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&q=80&w=600',
-    'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=600'
-  ]
+  'Kabianga Center',
+  'The main center of our Catholic parish. It houses the main parish church and is where the priests reside.',
+  '[]'::jsonb,
+  ARRAY[]::TEXT[]
 ),
 (
-  'St. Augustine Kiptere',
-  'Located in Kiptere center, St. Augustine is the second oldest outstation center. It is active in local community programs and runs a dedicated youth guidance initiative.',
-  '[
-    {"role": "Catechist", "name": "Mr. Bernard Rono", "phone": "0712345670"},
-    {"role": "Chairman", "name": "Mr. Philip Mutai", "phone": "0723456781"},
-    {"role": "Secretary", "name": "Ms. Susan Chepngetich", "phone": "0734567892"},
-    {"role": "Treasurer", "name": "Mrs. Ann Chepkoech", "phone": "0745678903"}
-  ]'::jsonb,
-  ARRAY[
-    'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=600'
-  ]
+  'Kapsiya',
+  'Outstation center serving the Kapsiya community.',
+  '[]'::jsonb,
+  ARRAY[]::TEXT[]
 ),
 (
-  'St. Rita Chepnyogaa',
-  'A vibrant agricultural community outstation church in Chepnyogaa zone. It hosts active CWA and choir groupings and runs rotational home prayer services.',
-  '[
-    {"role": "Catechist", "name": "Mr. Silas Kiprono", "phone": "0719876543"},
-    {"role": "Chairman", "name": "Mr. Stephen Sang", "phone": "0728765432"},
-    {"role": "Secretary", "name": "Mrs. Grace Bett", "phone": "0737654321"},
-    {"role": "Treasurer", "name": "Mr. Alfred Kiprotich", "phone": "0746543210"}
-  ]'::jsonb,
-  ARRAY[
-    'https://images.unsplash.com/photo-1516280440614-37939bbacd6a?auto=format&fit=crop&q=80&w=600'
-  ]
+  'Kibingei',
+  'Outstation center serving the Kibingei community.',
+  '[]'::jsonb,
+  ARRAY[]::TEXT[]
 ),
 (
-  'St. Padre Pio Kapkatet Road',
-  'Our newest outstation center situated along the Kapkatet Road highway, serving the growing local population with weekly services and community development meetings.',
-  '[
-    {"role": "Catechist", "name": "Mr. Peter Bett", "phone": "0715566778"},
-    {"role": "Chairman", "name": "Mr. John Langat", "phone": "0726677889"},
-    {"role": "Secretary", "name": "Mrs. Beatrice Kosgei", "phone": "0737788990"},
-    {"role": "Treasurer", "name": "Mr. Gideon Kiprotich", "phone": "0748899001"}
-  ]'::jsonb,
-  ARRAY[
-    'https://images.unsplash.com/photo-1526976729451-9922bc9a680b?auto=format&fit=crop&q=80&w=600'
-  ]
+  'Kapkelek',
+  'Outstation center serving the Kapkelek community.',
+  '[]'::jsonb,
+  ARRAY[]::TEXT[]
 )
 ON CONFLICT (name) DO NOTHING;
 
@@ -79,6 +50,7 @@ ON CONFLICT (name) DO NOTHING;
 ALTER TABLE public.jumuiyas ADD COLUMN IF NOT EXISTS center_name TEXT;
 
 -- Update existing seed jumuiyas to reference their centers
-UPDATE public.jumuiyas SET center_name = 'St. Peter''s Kabianga Central' WHERE name = 'Mtakatifu Yuda Tadeo';
-UPDATE public.jumuiyas SET center_name = 'St. Rita Chepnyogaa' WHERE name = 'Mtakatifu Rita wa Kasia';
-UPDATE public.jumuiyas SET center_name = 'St. Padre Pio Kapkatet Road' WHERE name = 'Mtakatifu Pio wa Pietrelcina';
+UPDATE public.jumuiyas SET center_name = 'Kabianga Center' WHERE name IN ('St. Michael', 'St. Peter''s', 'St. Jude', 'St. Monica', 'St. Mary Mother of God Mobego');
+UPDATE public.jumuiyas SET center_name = 'Kapsiya' WHERE name = 'St. Joseph''s';
+UPDATE public.jumuiyas SET center_name = 'Kibingei' WHERE name IN ('St. John''s', 'St. Teresa''s');
+UPDATE public.jumuiyas SET center_name = 'Kapkelek' WHERE name = 'St. Luke''s';

@@ -81,6 +81,14 @@ export default function AdminPage() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
+  // Forgot Password / Password Reset state
+  const [forgotView, setForgotView] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+
   // Tab control
   const [activeTab, setActiveTab] = useState<
     'carousel' | 'history' | 'gallery' | 'theme' | 'schedules' | 
@@ -252,8 +260,11 @@ export default function AdminPage() {
       setLoadingSession(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsResettingPassword(true);
+      }
     });
 
     // Auto-logout after 30 minutes of inactivity
@@ -436,6 +447,53 @@ export default function AdminPage() {
       if (error) throw error;
     } catch (err: any) {
       setAuthError(err.message || 'Authentication failed. Please check credentials.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/admin`
+      });
+      if (error) throw error;
+      setResetSent(true);
+    } catch (err: any) {
+      setAuthError(err.message || 'Failed to send reset link.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handlePasswordResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setAuthError('Nenosiri hailingani. / Passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setAuthError('Nenosiri lazima liwe na herufi 6 au zaidi. / Password must be at least 6 characters.');
+      return;
+    }
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      
+      showNotification('success', 'Nenosiri jipya limeshachaguliwa! / Password updated successfully!');
+      setIsResettingPassword(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      // Clear hash parameters from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (err: any) {
+      setAuthError(err.message || 'Failed to update password.');
     } finally {
       setAuthLoading(false);
     }
@@ -1186,6 +1244,159 @@ export default function AdminPage() {
     );
   }
 
+  // PASSWORD RESET PORTAL
+  if (isResettingPassword) {
+    return (
+      <div className="flex flex-col justify-center items-center py-10 sm:py-20 px-4">
+        <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl overflow-hidden font-sans">
+          <div className="p-6 bg-gradient-to-br from-primary to-purple-800 text-white text-center space-y-2">
+            <div className="w-12 h-12 bg-white/15 rounded-full flex items-center justify-center mx-auto border border-white/20">
+              <Lock className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-xl font-extrabold tracking-tight">Weka Nenosiri Jipya</h1>
+            <p className="text-xs text-purple-100 font-medium">Create a New Password for Your Account</p>
+          </div>
+
+          <form onSubmit={handlePasswordResetSubmit} className="p-6 space-y-5">
+            {authError && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold rounded-xl flex items-start space-x-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label htmlFor="new-password" className="text-xs font-bold text-foreground/80 block">Nenosiri Jipya / New Password</label>
+              <div className="relative">
+                <Lock className="w-4.5 h-4.5 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  id="new-password"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all touch-friendly-input"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="confirm-password" className="text-xs font-bold text-foreground/80 block">Thibitisha Nenosiri / Confirm Password</label>
+              <div className="relative">
+                <Lock className="w-4.5 h-4.5 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  id="confirm-password"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all touch-friendly-input"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="w-full touch-target mt-2 py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary-hover active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
+            >
+              {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              <span>Hifadhi Nenosiri / Update Password</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // FORGOT PASSWORD REQUEST PORTAL
+  if (forgotView) {
+    return (
+      <div className="flex flex-col justify-center items-center py-10 sm:py-20 px-4">
+        <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl overflow-hidden font-sans">
+          <div className="p-6 bg-gradient-to-br from-primary to-purple-800 text-white text-center space-y-2">
+            <div className="w-12 h-12 bg-white/15 rounded-full flex items-center justify-center mx-auto border border-white/20">
+              <Mail className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-xl font-extrabold tracking-tight">Kurejesha Nenosiri</h1>
+            <p className="text-xs text-purple-100 font-medium">Reset Your Account Password</p>
+          </div>
+
+          <form onSubmit={handleForgotSubmit} className="p-6 space-y-5">
+            {authError && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold rounded-xl flex items-start space-x-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            {resetSent ? (
+              <div className="space-y-4 text-center">
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-semibold rounded-xl leading-relaxed">
+                  Kiungo cha kuweka upya nenosiri kimetumwa kwa barua pepe yako! Tafadhali angalia kikasha chako. <br/>
+                  <span className="text-[10px] text-muted-foreground">A reset link has been sent to your email! Please check your inbox.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotView(false);
+                    setResetSent(false);
+                    setResetEmail('');
+                  }}
+                  className="text-xs font-bold text-primary hover:underline mt-2"
+                >
+                  Rudi Kwenye Kuingia / Back to Login
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <label htmlFor="reset-email" className="text-xs font-bold text-foreground/80 block">Secretary Email Address</label>
+                  <div className="relative">
+                    <Mail className="w-4.5 h-4.5 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      id="reset-email"
+                      type="email"
+                      required
+                      placeholder="admin@parishkabianga.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all touch-friendly-input"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  className="w-full touch-target mt-2 py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary-hover active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
+                >
+                  {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  <span>Tuma Kiungo cha Kurejesha / Send Reset Link</span>
+                </button>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotView(false);
+                      setAuthError('');
+                    }}
+                    className="text-xs font-bold text-muted-foreground hover:text-primary hover:underline transition-all"
+                  >
+                    Rudi Kwenye Kuingia / Back to Login
+                  </button>
+                </div>
+              </>
+            )}
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   // LOGIN PORTAL
   if (!session) {
     return (
@@ -1236,6 +1447,19 @@ export default function AdminPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all touch-friendly-input"
                 />
+              </div>
+              <div className="flex items-center justify-between text-xs mt-1">
+                <span />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotView(true);
+                    setAuthError('');
+                  }}
+                  className="font-semibold text-primary hover:underline focus:outline-none transition-all"
+                >
+                  Umesahau nenosiri? / Forgot password?
+                </button>
               </div>
             </div>
 
@@ -1515,8 +1739,8 @@ export default function AdminPage() {
                 </div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Jumuiya Name</label><input type="text" required placeholder="Mtakatifu Yuda Tadeo" value={jName} onChange={e => setJName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Zone</label><input type="text" required placeholder="Kabianga Central" value={jZone} onChange={e => setJZone(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leader Name</label><input type="text" required placeholder="Peter Mutai" value={jLeader} onChange={e => setJLeader(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
-                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leader Phone</label><input type="text" required placeholder="0704285127" value={jPhone} onChange={e => setJPhone(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leader Name</label><input type="text" placeholder="Peter Mutai" value={jLeader} onChange={e => setJLeader(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
+                <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Leader Phone</label><input type="text" placeholder="0704285127" value={jPhone} onChange={e => setJPhone(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Day & Time</label><input type="text" required placeholder="Thursdays at 5:00 PM" value={jDay} onChange={e => setJDay(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <div className="space-y-1"><label className="text-xs font-bold text-muted-foreground">Meeting Venue</label><input type="text" placeholder="Rotational" value={jLocation} onChange={e => setJLocation(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-background text-sm" /></div>
                 <button type="submit" className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl">Save Jumuiya</button>

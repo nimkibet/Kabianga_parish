@@ -72,8 +72,8 @@ CREATE TABLE IF NOT EXISTS public.jumuiyas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,                -- e.g., "Mtakatifu Yuda Tadeo"
     zone TEXT NOT NULL,                -- e.g., "Central Zone"
-    leader_name TEXT NOT NULL,
-    leader_phone TEXT NOT NULL,
+    leader_name TEXT,
+    leader_phone TEXT,
     meeting_day TEXT NOT NULL,         -- e.g., "Every Thursday at 5:00 PM"
     meeting_location TEXT,             -- e.g., "Members' houses (rotational)"
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -291,10 +291,14 @@ ON CONFLICT DO NOTHING;
 -- Seed Sunday Service schedules
 INSERT INTO public.service_schedules (title, day_of_week, start_time, end_time, details, type)
 VALUES
-('English Service', 0, '08:00:00', '10:00:00', 'Holy Communion & Sermon', 'Mass'),
-('Kiswahili Service', 0, '10:30:00', '12:30:00', 'Ibada ya Asubuhi na Mahubiri', 'Mass'),
-('Youth & Young Adults Service', 0, '14:00:00', '16:00:00', 'Praise, Worship & Topical Discussion', 'Mass'),
-('Confessions (Saturday)', 6, '15:00:00', '17:00:00', 'Reconciliation Service', 'Confession')
+('Swahili Service', 0, '09:30:00', '11:30:00', 'Misa ya Kiswahili - Main Center', 'Mass'),
+('Adoration & Mass', 4, '15:00:00', '16:30:00', 'Eucharistic Adoration and Holy Mass', 'Mass'),
+('Daily Mass', 1, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass'),
+('Daily Mass', 2, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass'),
+('Daily Mass', 3, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass'),
+('Daily Mass', 4, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass'),
+('Daily Mass', 5, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass'),
+('Daily Mass', 6, '07:00:00', '07:30:00', 'Daily Morning Mass', 'Mass')
 ON CONFLICT DO NOTHING;
 
 -- Seed default Societies
@@ -309,9 +313,15 @@ ON CONFLICT DO NOTHING;
 -- Seed default Jumuiyas (SCCs)
 INSERT INTO public.jumuiyas (name, zone, leader_name, leader_phone, meeting_day, meeting_location)
 VALUES
-('Mtakatifu Yuda Tadeo', 'Kabianga Central', 'Mr. Peter Mutai', '0712345678', 'Every Thursday at 5:00 PM', 'Rotational (Member Homes)'),
-('Mtakatifu Rita wa Kasia', 'Chepnyogaa Zone', 'Mrs. Ann Chepkoech', '0723456789', 'Every Wednesday at 4:30 PM', 'Chepnyogaa Local Church Hall'),
-('Mtakatifu Pio wa Pietrelcina', 'Kapkatet Road Zone', 'Mr. Stephen Sang', '0734567890', 'Every Friday at 5:30 PM', 'Rotational (Member Homes)')
+('St. Michael', 'Kabianga Central', '', '', 'To be decided', 'Rotational'),
+('St. Peter\'s', 'Kabianga Central', '', '', 'To be decided', 'Rotational'),
+('St. Jude', 'Kabianga Central', '', '', 'To be decided', 'Rotational'),
+('St. Monica', 'Kabianga Central', '', '', 'To be decided', 'Rotational'),
+('St. Mary Mother of God Mobego', 'Kabianga Central', '', '', 'To be decided', 'Rotational'),
+('St. Joseph\'s', 'Kapsiya', '', '', 'To be decided', 'Rotational'),
+('St. John\'s', 'Kibingei', '', '', 'To be decided', 'Rotational'),
+('St. Teresa\'s', 'Kibingei', '', '', 'To be decided', 'Rotational'),
+('St. Luke\'s', 'Kapkelek', '', '', 'To be decided', 'Rotational')
 ON CONFLICT DO NOTHING;
 
 -- Seed default Giving Project
