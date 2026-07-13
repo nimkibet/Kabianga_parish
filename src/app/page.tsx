@@ -123,7 +123,9 @@ export default function Home() {
     try {
       const { data, error } = await supabase
         .from('service_schedules')
-        .select('*');
+        .select('*')
+        .order('day_of_week', { ascending: true })
+        .order('start_time', { ascending: true });
 
       if (error) throw error;
       
@@ -182,7 +184,7 @@ export default function Home() {
                   Next Service
                 </span>
                 <h3 className="font-extrabold text-base text-foreground leading-tight mt-1">
-                  {upcomingService.title} ({getDayName(upcomingService.day_of_week)})
+                  {upcomingService.title}{!upcomingService.title.includes(getDayName(upcomingService.day_of_week)) ? ` (${getDayName(upcomingService.day_of_week)})` : ''}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {formatTimeString(upcomingService.start_time)} to {formatTimeString(upcomingService.end_time)} • {upcomingService.details}
@@ -220,9 +222,9 @@ export default function Home() {
             href="https://www.google.com/maps/search/?api=1&query=St.+John+Paul+II+Kabianga+Catholic+Parish,+Kabianga+University"
             target="_blank"
             rel="noopener noreferrer"
-            className="touch-target px-5 py-2.5 bg-muted text-foreground/80 font-semibold rounded-xl border border-border hover:bg-border active:scale-95 transition-all flex items-center space-x-2"
+            className="touch-target px-5 py-2.5 bg-card hover:bg-muted text-foreground font-semibold rounded-xl border transition-all flex items-center space-x-2"
           >
-            <MapPin className="w-4 h-4" />
+            <MapPin className="w-4 h-4 text-primary" />
             <span>Find Us</span>
           </a>
         </div>
@@ -356,7 +358,7 @@ export default function Home() {
             >
               <div className="space-y-2">
                 <span className="text-xs font-bold text-accent bg-accent/10 px-2.5 py-1 rounded-md">
-                  {service.day_of_week === 0 ? 'Every Sunday' : service.day_of_week === 6 ? 'Every Saturday' : 'Weekday'}
+                  {`Every ${getDayName(service.day_of_week)}`}
                 </span>
                 <h4 className="text-lg font-bold text-foreground">{service.title}</h4>
                 <p className="text-xs text-muted-foreground">{service.details}</p>
