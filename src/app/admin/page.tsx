@@ -509,6 +509,10 @@ export default function AdminPage() {
       );
       if (error) throw error;
       setCurrentOverrideColor(color);
+      
+      // Dispatch custom window event for real-time live theme updates
+      window.dispatchEvent(new CustomEvent('theme-override-changed', { detail: color }));
+      
       showNotification('success', `Theme overridden to ${color === 'auto' ? 'Calendar Sync' : color.toUpperCase()}`);
     } catch (err: any) {
       showNotification('error', `Failed to set theme override: ${err.message}`);

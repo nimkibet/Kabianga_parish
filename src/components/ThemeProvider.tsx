@@ -106,6 +106,21 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       }
     }
     fetchColor();
+
+    const handleOverrideEvent = (e: Event) => {
+      const customEvt = e as CustomEvent;
+      const color = customEvt.detail;
+      if (color === 'auto') {
+        fetchColor();
+      } else {
+        setThemeStyles(generateStyles(color));
+      }
+    };
+
+    window.addEventListener('theme-override-changed', handleOverrideEvent);
+    return () => {
+      window.removeEventListener('theme-override-changed', handleOverrideEvent);
+    };
   }, []);
 
   return (
